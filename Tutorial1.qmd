@@ -1,0 +1,338 @@
+---
+title: "Tutorial 1 Regression Review & Bias"
+pagetitle: Tutorial_1
+---
+
+In this tutorial, you'll learn (or refresh your memory) about hypothesis testing, ordinary least squares (OLS) regression, transformation, logistic regression, and we'll discuss why we can't make causal statement by simply adding control variables to our model.
+
+By the end of this tutorial, you should be familiar with the following:
+
+1\. Basic concepts of hypothesis testing
+
+2\. OLS regression: single and multiple linear regression, regression with interaction term
+
+3\. Transformation
+
+4\. Logistic regression
+
+# Background
+
+Each week, the tutorial will include all of the code to demonstrate some of the fundamental aspects of the work we are doing. The tutorials on the website include R code and output. If you would like to execute & edit the code, please download the .qmd file from Google Classroom, and execute & edit the code in RStudio.
+
+You'll do code inside of `cells` that look like this:
+
+```{r}
+x <- 5
+x + 10
+```
+
+You can run the code inside the cell by hitting the play button in the upper right-hand side of the cell. When the code is running, you'll notice that the play button transforms, indicating that the operation is being performed.
+
+This tutorial assumes a basic familiarity with R, so we will not be covering foundational topics such as setting the working directory, reading in data, or installing packages. If you’d like a refresher, there are many excellent online resources available, and you are always welcome to reach out to the instructor for guidance.
+
+# Front-end Matters
+
+In this tutorial, we will be using the following packages, make sure you have these packages installed.
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(smss)
+library(stargazer)
+library(mlbench)
+```
+
+# Hypothesis Testing
+
+A **hypothesis** is a statement about a **population**. We test the hypothesis using a **sample**. ***Null Hypothesis (***$H_0$) is a statement that the parameter takes a particular value.***Alternative Hypothesis (***$H_a$): a statement that the parameter falls in some range of values. Usually $H_0$ corresponds to no effect while $H_a$ represents some type of effect.
+
+In hypothesis testing, we start by assuming $H_0$ is true, then look at whether the sample contradicts it. If it does, we **reject** the $H_0$ in favor of $H_a$. If it does not, then we **fail to reject** $H_0$. We ***never*** **accept** the null hypothesis.
+
+The $\alpha$-level is a threshold such that you reject $H_0$. It is typically set as 0.05 or 0.01. To determine whether we reject $H_0$, we rely on statistical measures that quantify the strength of the evidence against the null hypothesis. Two key components in this decision process are the **t-value** and the **p-value**.
+
+The **t-value** measures how far our sample estimate is from the null hypothesis in terms of standard error. A larger absolute t-value suggests stronger evidence against $H_0$.
+
+$$t=\frac{\bar{x} - \mu_0}{{s}/{\sqrt{n}}}$$
+
+The **p-value** tells us the probability of observing a result at least as extreme as our test statistic, assuming $H_0$ is true. A smaller p-value indicates stronger evidence against $H_0$.
+
+## Example
+
+A manufacturer says the battery of their laptop lasts 10 hours on average. We want to test whether this is true ($\mu = 10$). Because we are interested in deviations from 10 in *either* direction, this is a ***two-sided***  test. Now we have a sample, with sample mean ($\bar{x}$) = 9.04, sample standard deviation (${s}$) = 1.83, and sample size = 30. Can we reject the null hypothesis? 
+
+We first calculate **t-value** based on sample statistics:
+
+$$t=\frac{\bar{x} - \mu_0}{{s}/{\sqrt{n}}}=\frac{9.04-10}{1.83/{\sqrt{30}}}=-2.87$$
+
+We then need to find the **critical value** base on our $\alpha$-level. Let's set $\alpha=0.05$. Since the absolute value of **t-value is greater than the critical value**, we can reject the null hypothesis. 
+
+```{r}
+critical <- round(qt(0.975,df=(30-1)),2)
+critical
+```
+
+We can manually calculate the **p-value**. With a p-value smaller than 0.05 (the $\alpha$-level), we can also reject the null hypothesis.
+
+```{r}
+t_statistic <- 2.87
+p_value <- (1 - pt(t_statistic, df= 29)) * 2
+p_value
+```
+
+# OLS regression
+
+So far, we have explored hypothesis testing, which allows us to assess whether a population parameter, such as a mean, differs from a hypothesized value. While this approach helps us make inferences about a single variable, we often want to go further—examining how one variable changes in response to another and making predictions. 
+
+This is where Ordinary Least Squares (OLS) regression becomes useful. OLS regression enables us to estimate the relationship between an independent variable and a dependent variable by fitting a line that minimizes the sum of squared errors, allowing us to quantify effects and make informed predictions.
+
+## Simple Linear Regression
+
+To start, let's consider the simplest case—a single independent variable predicting an outcome. This is known as simple linear regression, where we model a straight-line relationship between the predictor and the response variable. We will walk through an example using `student.survey` data.
+
+```{r}
+data(student.survey)
+head(student.survey)
+student.survey$male <- ifelse(student.survey$ge == "m", 1, 0)
+```
+
+This data is from `smss` package. It consists of responses of graduate students in the social sciences enrolled in STA 6126 in a recent term at the University of Florida. Variables in this data include gender (ge), high school GPA (hi), average number of hours per week that you watch TV (tv), and political affiliation (pa). We start by looking into the relationship between watching TV and high school GPA.
+
+```{r}
+ggplot(data = student.survey, aes(x = tv, y = hi)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "Hours of TV Watched per Week", 
+       y = "GPA", 
+       title = "Relationship Between TV Watching and GPA") +
+  theme_minimal()
+```
+
+The visualization tells us there's a negative relationship between watching TV and GPA. We can use OLS regression to test whether this relationship is statistically significant. 
+```{r}
+m1 <- lm(hi~tv, data=student.survey)
+summary(m1)
+```
+
+From the OLS regression results, we can model the relationship between hours watching TV and high school GPA: $hi=3.441−0.0183*tv$. When a student watches 0 hours of TV, their predicted GPA is 3.441. Each additional hour of TV watched per week is associated with a decrease of 0.018 points in the GPA, and the impact is statistically significant at the 95% confidence level. 
+
+## Multiple Linear Regression
+
+In reality, most outcomes are influenced by more than one factor. Simple linear regression is often too simplistic to capture complex relationships. Multiple linear regression extends the model by including multiple independent variables, allowing us to control for additional factors and better isolate the effect of each predictor. Let’s explore how this works with the same data.
+
+```{r}
+m2 <- lm(hi~tv+male+pa,data=student.survey)
+summary(m2)
+```
+
+Results show that after controlling for gender and party affiliation, hours of TV watching still has a statistically significant impact on GPA at the 90% confidence level. Each additional hour of TV watched per week is associated with a 0.017 point decrease in GPA. Compared to Democrats, Independents have a 0.16 point higher GPA, but this difference is not statistically significant.
+
+In this model, we use Democrats as the reference category (baseline) for party affiliation. You can also change the baseline into other category using `relevel()` function. 
+
+```{r}
+student.survey$pa2 <- relevel(student.survey$pa, ref = "i")
+```
+
+**If we set Independents as the baseline category for party affiliation, how does being Republican affect high school GPA compared to Independents?**
+
+## Interaction Term
+
+So far, we have assumed that each independent variable has an independent and additive effect on the dependent variable. However, in many cases, the effect of one variable depends on the level of another. This is where interaction terms come in. By including interaction terms in our regression model, we can capture how the relationship between one variable and the outcome changes depending on another variable.
+
+```{r}
+m3 <- lm(hi~tv*male, data=student.survey)
+summary(m3)
+```
+In this model, $GPA=3.539−0.0219TV−0.1773Male+0.0044(TV*Male)$. Unlike previous models where we could interpret coefficients directly, interaction terms modify the effect of one variable depending on the value of another. This means we need to substitute specific values to understand the impact on different groups. For female students (male=0), watching one additional hour of TV is associated with a 0.0219 point decrease in GPA. For male students (male=1), each additional hour of TV is associated with a 0.0175 point ($-0.219+0.044$) decrease in GPA. Since the interaction term is not statistically significant, it suggests that the relationship between TV watching and GPA is similar for both genders. 
+
+## Regression Table
+
+To present the results of the three regression models (`m1`, `m2`, and `m3`) side by side in a well-formatted table, you can use the stargazer package in R.
+
+```{r}
+stargazer(m1, m2, m3, type = "text",
+          title = "Regression Results",
+          dep.var.labels = "High School GPA",
+          covariate.labels = c("TV Hours", "Male", "Party Affiliation: Independent", "Party Affiliation: Republican", "TV Hours x Male"),
+          omit.stat = c("f", "ser"),
+          no.space = TRUE)
+```
+
+# Transformation
+
+A key assumption of OLS regression is that there is a linear relationship between the predictors and the outcome. However, in many real-world scenarios, this assumption does not hold. Transformations, such as taking the log or square of a variable, can help linearize relationships, stabilize variance, and improve model fit. We will walk through an example using `UNdata` data.
+
+```{r}
+data(UNdata)
+head(UNdata)
+```
+
+This data is from the `smss` package, from the Human Development report of 2005. Variables include female life expectancy (Life), GDP per capita in US dollars (GDP) and total fertility rate (Fert). Let's first visualize the relationship between GDP and life expectancy.
+
+```{r}
+ggplot(data = UNdata, aes(x = GDP, y = Life)) +
+  geom_point() +
+  labs(x = "GDP per capita (US$)", 
+       y = "Life expectancy", 
+       title = "Relationship Between GDP and Life Expectancy") +
+  theme_minimal()
+```
+
+This shows a logarithmic relationship that cannot be captured using a straight line. So we need to **transform** the variable before running OLS regressions. 
+
+```{r}
+ggplot(data = UNdata, aes(x = log(GDP), y = Life)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(x = "log(GDP per capita)", 
+       y = "Life expectancy", 
+       title = "Relationship Between GDP and Life Expectancy") +
+  theme_minimal()
+```
+Now we see a linear relationship after we take the nature log of GDP per capita. Then we can run an OLS regression like earlier.
+
+```{r}
+m4 <- lm(Life ~ log(GDP)+Fert, data=UNdata)
+summary(m4)
+```
+
+The results suggest that 1-unit increase in `log(GDP)` is associated with a 2.65 year increase in female life expectancy, and the impact is highly statistically significant. However, if we want to interpret the result using the original GDP level, it would be more complicated. 
+
+# Logistic Regression
+
+Until now, we have focused on regression models where the dependent variable is continuous. But what if our outcome is binary, such as "yes/no" or "success/failure"? In such cases, linear regression is not appropriate. 
+
+The example below shows the relationship between glucose level, body mass, and diabetes.
+
+```{r}
+data("PimaIndiansDiabetes2", package = "mlbench")
+
+PimaIndiansDiabetes2 %>%
+  as_tibble() %>%
+  mutate(diabetes_int = ifelse(diabetes == "pos", 1, 0)) %>%
+  select(c("glucose", "mass", "diabetes_int")) %>%
+  rename(diabetes = diabetes_int) %>%
+  na.omit() -> pima
+
+scatter_p <- pima %>%
+  ggplot(aes(glucose, diabetes)) +
+  geom_point(alpha = 0.07, size = 10) +
+  labs(x = "Plasma Glucose Concentration",
+       y = "Diabetes positive") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 15))
+
+linear_p <- scatter_p +
+  geom_smooth(method = "lm")
+linear_p
+```
+
+Instead, we use logistic regression, which models the probability of an event occurring. 
+
+```{r}
+logistic_p <- scatter_p +
+  geom_smooth(method = "glm",
+              method.args = list(family = "binomial"))
+logistic_p
+```
+To run logistic regression in R, instead of the `lm()` function, we use `glm()` function, and specify `family=binomial`.
+
+```{r}
+m5 <- glm(formula = diabetes ~ glucose, family = binomial(link="logit"), data = pima)
+summary(m5)
+```
+
+The coefficient 0.0405 represents the log-odds change in the probability of having diabetes for each one-unit increase in glucose level. 
+
+# Why Adding Control Variables is NOT Enough
+
+## Simpson's Paradox and Collider Bias
+
+Simpson's paradox means that a tend appears in different groups of data, but disappears or reverses when these groups are combined. Collider bias occurs when we condition on (control for, subset by, or select a sample based on) a variable that is influenced by two other variables. Let's look into an example using simulated data. 
+
+```{r}
+set.seed(123)
+
+n <- 500  
+
+# Generate exercise levels (hours per week)
+exercise <- rnorm(n, mean = 5, sd = 2)
+
+# Generate blood pressure - Randomly generated, NO relationship with exercise
+blood_pressure <- rnorm(n, mean = 120, sd = 5)
+
+# Obesity is influenced by both exercise and blood pressure (collider)
+obesity <- ifelse(exercise < 5 | blood_pressure > 120, 1, 0)
+
+# Modify Blood Pressure to create group-specific effects
+blood_pressure[obesity == 0] <- blood_pressure[obesity == 0] - 2 * exercise[obesity == 0]  # Exercise LOWERS BP for non-obese
+blood_pressure[obesity == 1] <- blood_pressure[obesity == 1] + 2 * exercise[obesity == 1]  # Exercise RAISES BP for obese
+
+# Create dataframe
+data <- data.frame(exercise, blood_pressure, obesity)
+```
+
+The visualization below shows an example of Simpson's Paradox: the trend differs when analyzing separate groups compared to the pooled data.
+
+```{r}
+ggplot(data, aes(x = exercise, y = blood_pressure, color = as.factor(obesity))) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  geom_smooth(aes(color = "Pooled Data"), method = "lm", se = FALSE, data = data, linetype = "dashed") +
+  labs(title = "Simpson's Paradox: Exercise & Blood Pressure with Obesity as Collider",
+       x = "Exercise (hours per week)",
+       y = "Blood Pressure (mmHg)",
+       color = "Obesity Status") +
+  theme_minimal()
+```
+
+In our case, obesity is a collider because it is influenced by both exercise and blood pressure. Let's examine the regression results by running models on the pooled data, within each obesity group separately, and with obesity as a control variable.
+
+```{r}
+# Overall regression (ignoring obesity)
+overall <- lm(blood_pressure ~ exercise, data = data)
+
+# Regression within subgroup
+obese <- lm(blood_pressure ~ exercise, data = data %>% filter(obesity == 1))
+non_obese <- lm(blood_pressure ~ exercise, data = data %>% filter(obesity == 0))
+
+# Controlling for obesity
+control <- lm(blood_pressure ~ exercise + obesity, data = data)
+
+stargazer(overall, obese, non_obese, control,
+          type = "text")
+```
+In Model 1, we see that exercise has a negative impact on blood pressure, which makes sense. However, when we examine different subgroups, we find that the direction of the effect varies across groups—a classic example of Simpson’s Paradox. Surprisingly, in Model 4, after controlling for obesity, the coefficient for exercise flips from negative to positive. Does this mean that exercising regularly increases blood pressure? Of course not. This misleading result occurs because obesity is a collider, and controlling for a collider introduces bias rather than reducing it.
+
+## Multicollinearity
+
+Adding too many control variables can lead to multicollinearity, where some predictors become highly correlated with each other. This makes it difficult to determine the independent effect of each variable, leading to unstable estimates and inflated standard errors. As a result, even if a variable has a real effect, its coefficient may appear insignificant due to the overlap in explanatory power with other controls. Let's look into the example below.
+
+In this example, we have 100 employee with employees' ages range from 25 to 65. Everyone in the company graduated college at the age of 22, and started working there. Everyone is paid roughly based on their experience. If we run regression using both age and experience as independent variables, we have multicollinearity problem.
+
+```{r}
+set.seed(123)
+age <- sample(25:65, size  = 100, replace = TRUE)
+experience <- age - 22
+salary <- 2000 * (experience) + rnorm(100, sd = 20000)
+
+summary(lm(salary ~ age + experience))
+```
+This situation is easy to detect because R completely omits the coefficient for experience, indicating perfect multicollinearity. However, in real-world cases, variables may be highly correlated but not perfectly related, meaning R will still report a coefficient. For example, let's add some variation to `age`.
+
+```{r}
+age <- age + round(rnorm(100)) 
+summary(lm(salary ~ age + experience))
+```
+
+Now, we see that although R reports coefficients for both variables, the results are quite strange. The standard errors are extremely high. The p-values are large, meaning we fail to detect a significant relationship -- even though age and experience should clearly influence salary. However, the F-test p-value is still small, suggesting that at least one of the predictors matters -- we just can’t tell which one!
+
+This demonstrates two key indicators of multicollinearity: 1. Large standard errors (high uncertainty in estimates). 2. High p-values for individual variables, despite a significant overall model (low F-test p-value).
+
+Multicollinearity makes estimates unreliable, leading to misleading or biased results. So, be cautious when adding too many highly correlated control variables—sometimes, they do more harm than good!
+
+# Conclusion
+
+This week, we’ve reviewed basic regression concepts and R functions, and explored why simply adding control variables is not enough for causal inference. Omitted variable bias, collider bias, Simpson’s Paradox, multicollinearity, and endogeneity all show that regression alone can’t always tell us the true causal story.
+
+Next week, we introduce a powerful tool to explicitly map out causal structures: Directed Acyclic Graphs (DAGs). With DAGs, we can systematically identify confounders, colliders, and causal pathways, helping us decide which variables to control for and which ones to leave out.

@@ -1,11 +1,11 @@
 ---
-title: "CausalInference_Tutorial"
+title: "Welcome Page"
 ---
 
-This is a Quarto website.
+Welcome to DACSS790 Causal Inference. All classroom material, including recordings, slides, tutorials, and assignment descriptions, will be posted in Canvas. 
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+This tutorial website contains the R code and output of weekly tutorials.
 
-```{r}
-1 + 1
-```
+<font size='5'><b> Weekly Tutorials </b></font>
+
+[Week 1 Regression Review \& Bias](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial1.html)
