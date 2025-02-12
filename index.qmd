@@ -9,3 +9,5 @@ This tutorial website contains the R code and output of weekly tutorials.
 <font size='5'><b> Weekly Tutorials </b></font>
 
 [Week 1 Regression Review \& Bias](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial1.html)
+
+[Week 2 Directed Acyclic Graphs](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial2.html)

@@ -1,0 +1,248 @@
+---
+title: "Tutorial 2 Directed Acyclic Graphs"
+pagetitle: Tutorial_2
+---
+
+Directed Acyclic Graphs (DAGs) help us visualize causal relationships between variables. In this tutorial, you'll learn about creating DAGs in R. By the end of this tutorial, you should be familiar with the following:
+
+1\. packages `ggdag` and `dagitty`
+
+2\. Create a simple DAG
+
+3\. Customize DAG with colors, and labels
+
+4\. Highlight causal paths, confounders, and colliders
+
+# Front-end Matters
+
+In this tutorial, we will be using `ggdag` and `dagitty` packages to create and visualize DAGs in R. `dagitty` provides a framework for defining causal graphs, identifying adjustment sets, and testing causal assumptions, while ggdag makes it easy to plot and customize DAGs using ggplot2. More detailed information can be found on their official websites: [ggdag](https://r-causal.github.io/ggdag/);[dagitty](https://www.dagitty.net/)
+
+```{r}
+#install.packages("ggdag")
+#install.packages("dagitty")
+
+library(ggdag)
+library(dagitty)
+
+#We also need to load our old friend ggplot2
+library(ggplot2)
+
+#The function below sets a clean, minimalistic background specifically designed for DAG visualization, removing unnecessary grid lines and axes for better readability.
+theme_set(theme_dag())
+```
+
+# Creating a Basic DAG
+
+Let's start from the most simple example: we have two nodes, A is the treatment and B is the outcome.
+
+```{r}
+dag <- dagitty("dag{A -> B}")
+tidy_dagitty(dag)
+```
+
+In this output, *name* shows the name of each node; *x* and *y* are automatically generated, representing the x- and y-coordinates for positioning nodes in a DAG; *xend* and *yend* represent the coordinates of the ending point of an edge; *circular* indicates whether the DAG layout is circular.
+
+```{r}
+ggdag(dag, layout="circle")
+#other layout options include "tree" and "stress" 
+```
+
+Instead of the `->`, we can use `~`, a more R-like formula syntax through the `dagify()` function.
+
+```{r}
+dagify(B ~ A) %>%
+  ggdag()
+```
+
+We can add more nodes to DAG, and create the *forks*, *chain*, and *inverted forks* paths we introduced in the lecture.
+
+Forks:
+
+```{r}
+dagify(D ~ E,
+       F ~ E)%>%
+  ggdag(layout="tree")
+```
+
+Chain:
+
+```{r}
+dagify(E ~ D,
+       F ~ E)%>%
+  ggdag()
+```
+
+Inverted Forks (Collider):
+
+```{r}
+dagify(E ~ D,
+       E ~ F)%>%
+  ggdag(layout="tree")
+```
+
+# A more complicated DAG
+
+If we want to draw a more complicated DAG (like the wine -\> lifespan one we see in the textbook), we don't have to write down every single path. Instead, since lifespan is influenced by income, wine, health, and drugs, we can write these factors in one line of code. `dagify()` function also has options for declaring which variables are exposures, outcomes, or latent, as well as coordinates and labels for each node.
+
+Let's replicate the wine -\> lifespan graph in the textbook.
+
+```{r}
+winelife <- dagify(
+  Lifespan ~ Health + Income + Wine + Drugs,
+  Wine ~ Income + Health,
+  Income ~ U1,
+  Health ~ U1,
+  Drugs ~ Wine,
+  exposure = "Wine",
+  outcome = "Lifespan",
+  latent = "U1"
+)
+
+ggdag(winelife,layout="stress")
+```
+
+# Customize DAG
+
+We can also customize the DAG by adding labels and changing the color/size of the nodes and texts.
+
+```{r}
+winelife_label <- dagify(
+  Lifespan ~ Health + Income + Wine + Drugs,
+  Wine ~ Income + Health,
+  Income ~ U1,
+  Health ~ U1,
+  Drugs ~ Wine,
+  labels = c(
+    "Lifespan" = "Life\n Span",
+    "Health" = "Health",
+    "Income" = "Income",
+    "Wine" = "Drinking\n Wine",
+    "Drugs" = "Drugs",
+    "U1" = "U1"
+  ),
+  exposure = "Wine",
+  outcome = "Lifespan",
+  latent = "U1"
+)
+
+ggdag(winelife_label,layout="stress", text=FALSE, use_labels="label")
+```
+
+In this DAG, U1 is a latent variable, meaning it is unobserved and omitted from our dataset. Since latent variables can introduce unmeasured confounding, it is often useful to highlight them visually in our causal diagram.
+
+We can change the color of a specific node (U1) to make it stand out, helping us easily identify unobserved variables in our analysis.
+
+We need to create `tidy_dagitty()` again since it converts the DAG into a tidy format, allowing us to manipulate node attributes (such as color, labels, and positions) before plotting. Without this step, `ggdag()` would not recognize custom aesthetics like assigning a different color to only one node.
+
+```{r}
+dag_tidy <- tidy_dagitty(winelife_label)
+dag_tidy
+```
+
+Now we can create a new column to define node color.
+
+```{r}
+ggdag(dag_tidy, layout = "stress", text = FALSE,) +
+  geom_dag_point(aes(fill = ifelse(name=="U1","grey","black")), size = 15, shape = 21, stroke = 0.001) +  # Use 'fill' for color
+  geom_dag_label(aes(label = label), color = "black", size = 3, vjust = -0.8) + # vjust for label location
+  #geom_dag_text(color = "black", size = 5) +  to modify text color and size (not applicable here)
+  scale_fill_identity() +  
+  ggtitle("DAG with Custom Color for U1 (Latent)")
+```
+
+# Highlight causal paths, confounders, and colliders
+
+## Finding paths
+
+`ggdag_paths()` function shows all the causal and non-causal paths between the exposure and outcome, including frontdoor paths, backdoor paths and paths involving colliders.
+
+```{r}
+ggdag_paths(winelife)
+```
+
+## Finding parents
+
+The `ggdag_parents()` function identifies and visualizes the parent nodes of a selected variable in a DAG. Identifying parent nodes can help identify potential backdoor paths if the selected node is the exposure in a DAG.
+
+```{r}
+ggdag_parents(winelife_label, "Wine", text=F, use_labels = "label")
+```
+
+## Closing the backdoor
+
+The backdoor criterion says that we have sufficient set of variables to control for confounding when it blocks all backdoor paths from treatment to the outcome, and when it does not include any descendants of treatment. Using `ggdag_adjustment_set()` function, we can quickly get the minimally sufficient adjustment sets to adjust for when analyzing the effect of x on y.
+
+```{r}
+ggdag_adjustment_set(winelife_label,text=F,use_labels = "label")
+```
+
+Let's see another practice using the example on Lecture Slide page 23.
+
+```{r}
+# First make the DAG
+Practice <- dagify(
+  Y ~ V + A + M,
+  A ~ Z + W,
+  M ~ W,
+  W ~ Z,
+  Z ~ V,
+  exposure = "A",
+  outcome = "Y"
+)
+
+ggdag(Practice, layout="stress")
+
+ggdag_adjustment_set(Practice)
+```
+
+## Control for collider?
+
+In the lecture, we emphasized that we should never control/block a collider. Because doing so induces a fake correlation between its parent variables, even if they were originally independent.
+
+To formally analyze whether variables are conditionally independent (d-separated) or conditionally related (d-connected) in a DAG, we can use the function `ggdag_dseparated()`.
+
+```{r}
+# First create a DAG with a collider
+IncomeHealth <- dagify(
+  Wine ~ Income + Health,
+  exposure = "Income",
+  outcome = "Health"
+)
+
+ggdag(IncomeHealth, layout='tree')
+
+ggdag_dseparated(IncomeHealth)
+```
+
+We see that Health and Income are d-separated, meaning they are independent. Let's see what happens if we control for the collider.
+
+```{r}
+ggdag_dseparated(IncomeHealth,
+  controlling_for = "Wine")
+```
+
+Now we see after controlling the collider, Health and Income become d-connected, meaning we are creating a fake relationship between them.
+
+## Blocking the frontdoor?
+
+Frontdoor adjustment leverages the mediator as a tool to estimate the causal effect of X on Y. It does not simply 'control for' or 'block' the mediator in the same way we adjust for confounder. We will discuss frontdoor adjustment in more detail during the Mediation Analysis week. For now, let's explore what happens when we block the mediator.
+
+```{r}
+# First create a DAG with a mediator
+winedrug <- dagify(
+  Lifespan ~ Drug,
+  Drug ~ Wine,
+  exposure = "Wine",
+  outcome = "Lifespan"
+)
+
+ggdag(winedrug, layout='stress')
+
+ggdag_dseparated(winedrug)
+
+ggdag_dseparated(winedrug, controlling_for = "Drug")
+```
+
+# Conclusion
+
+In this tutorial, we explored how to visualize and analyze DAGs in R using the `ggdag` and `dagitty` packages. We learned how to build, customize, and interpret DAGs, identify backdoor and frontdoor paths, and highlight key variables such as confounders, mediators, and colliders. Understanding DAGs helps ensure proper causal inference by guiding which variables to adjust for in analysis. 

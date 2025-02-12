@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "Welcome Page",
     "section": "",
-    "text": "Welcome to DACSS790 Causal Inference. All classroom material, including recordings, slides, tutorials, and assignment descriptions, will be posted in Canvas.\nThis tutorial website contains the R code and output of weekly tutorials.\n Weekly Tutorials \nWeek 1 Regression Review & Bias"
+    "text": "Welcome to DACSS790 Causal Inference. All classroom material, including recordings, slides, tutorials, and assignment descriptions, will be posted in Canvas.\nThis tutorial website contains the R code and output of weekly tutorials.\n Weekly Tutorials \nWeek 1 Regression Review & Bias\nWeek 2 Directed Acyclic Graphs"
   },
   {
     "objectID": "about.html",
@@ -68,5 +68,47 @@
     "title": "Tutorial 1 Regression Review & Bias",
     "section": "Multicollinearity",
     "text": "Multicollinearity\nAdding too many control variables can lead to multicollinearity, where some predictors become highly correlated with each other. This makes it difficult to determine the independent effect of each variable, leading to unstable estimates and inflated standard errors. As a result, even if a variable has a real effect, its coefficient may appear insignificant due to the overlap in explanatory power with other controls. Let’s look into the example below.\nIn this example, we have 100 employee with employees’ ages range from 25 to 65. Everyone in the company graduated college at the age of 22, and started working there. Everyone is paid roughly based on their experience. If we run regression using both age and experience as independent variables, we have multicollinearity problem.\n\nset.seed(123)\nage &lt;- sample(25:65, size  = 100, replace = TRUE)\nexperience &lt;- age - 22\nsalary &lt;- 2000 * (experience) + rnorm(100, sd = 20000)\n\nsummary(lm(salary ~ age + experience))\n\n\nCall:\nlm(formula = salary ~ age + experience)\n\nResiduals:\n   Min     1Q Median     3Q    Max \n-40598 -12992   -983  11339  65231 \n\nCoefficients: (1 not defined because of singularities)\n            Estimate Std. Error t value Pr(&gt;|t|)    \n(Intercept) -41856.8     8607.8  -4.863 4.41e-06 ***\nage           1943.2      181.7  10.694  &lt; 2e-16 ***\nexperience        NA         NA      NA       NA    \n---\nSignif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1\n\nResidual standard error: 19630 on 98 degrees of freedom\nMultiple R-squared:  0.5385,    Adjusted R-squared:  0.5338 \nF-statistic: 114.4 on 1 and 98 DF,  p-value: &lt; 2.2e-16\n\n\nThis situation is easy to detect because R completely omits the coefficient for experience, indicating perfect multicollinearity. However, in real-world cases, variables may be highly correlated but not perfectly related, meaning R will still report a coefficient. For example, let’s add some variation to age.\n\nage &lt;- age + round(rnorm(100)) \nsummary(lm(salary ~ age + experience))\n\n\nCall:\nlm(formula = salary ~ age + experience)\n\nResiduals:\n   Min     1Q Median     3Q    Max \n-40591 -12986   -992  11336  65225 \n\nCoefficients:\n             Estimate Std. Error t value Pr(&gt;|t|)\n(Intercept)   757.713  45204.994   0.017    0.987\nage             6.244   2049.783   0.003    0.998\nexperience   1936.977   2066.586   0.937    0.351\n\nResidual standard error: 19740 on 97 degrees of freedom\nMultiple R-squared:  0.5385,    Adjusted R-squared:  0.529 \nF-statistic: 56.59 on 2 and 97 DF,  p-value: &lt; 2.2e-16\n\n\nNow, we see that although R reports coefficients for both variables, the results are quite strange. The standard errors are extremely high. The p-values are large, meaning we fail to detect a significant relationship – even though age and experience should clearly influence salary. However, the F-test p-value is still small, suggesting that at least one of the predictors matters – we just can’t tell which one!\nThis demonstrates two key indicators of multicollinearity: 1. Large standard errors (high uncertainty in estimates). 2. High p-values for individual variables, despite a significant overall model (low F-test p-value).\nMulticollinearity makes estimates unreliable, leading to misleading or biased results. So, be cautious when adding too many highly correlated control variables—sometimes, they do more harm than good!"
+  },
+  {
+    "objectID": "Tutorial2.html",
+    "href": "Tutorial2.html",
+    "title": "Tutorial 2 Directed Acyclic Graphs",
+    "section": "",
+    "text": "Directed Acyclic Graphs (DAGs) help us visualize causal relationships between variables. In this tutorial, you’ll learn about creating DAGs in R. By the end of this tutorial, you should be familiar with the following:\n1. packages ggdag and dagitty\n2. Create a simple DAG\n3. Customize DAG with colors, and labels\n4. Highlight causal paths, confounders, and colliders"
+  },
+  {
+    "objectID": "Tutorial2.html#finding-paths",
+    "href": "Tutorial2.html#finding-paths",
+    "title": "Tutorial 2 Directed Acyclic Graphs",
+    "section": "Finding paths",
+    "text": "Finding paths\nggdag_paths() function shows all the causal and non-causal paths between the exposure and outcome, including frontdoor paths, backdoor paths and paths involving colliders.\n\nggdag_paths(winelife)"
+  },
+  {
+    "objectID": "Tutorial2.html#finding-parents",
+    "href": "Tutorial2.html#finding-parents",
+    "title": "Tutorial 2 Directed Acyclic Graphs",
+    "section": "Finding parents",
+    "text": "Finding parents\nThe ggdag_parents() function identifies and visualizes the parent nodes of a selected variable in a DAG. Identifying parent nodes can help identify potential backdoor paths if the selected node is the exposure in a DAG.\n\nggdag_parents(winelife_label, \"Wine\", text=F, use_labels = \"label\")"
+  },
+  {
+    "objectID": "Tutorial2.html#closing-the-backdoor",
+    "href": "Tutorial2.html#closing-the-backdoor",
+    "title": "Tutorial 2 Directed Acyclic Graphs",
+    "section": "Closing the backdoor",
+    "text": "Closing the backdoor\nThe backdoor criterion says that we have sufficient set of variables to control for confounding when it blocks all backdoor paths from treatment to the outcome, and when it does not include any descendants of treatment. Using ggdag_adjustment_set() function, we can quickly get the minimally sufficient adjustment sets to adjust for when analyzing the effect of x on y.\n\nggdag_adjustment_set(winelife_label,text=F,use_labels = \"label\")\n\n\n\n\n\n\n\n\nLet’s see another practice using the example on Lecture Slide page 23.\n\n# First make the DAG\nPractice &lt;- dagify(\n  Y ~ V + A + M,\n  A ~ Z + W,\n  M ~ W,\n  W ~ Z,\n  Z ~ V,\n  exposure = \"A\",\n  outcome = \"Y\"\n)\n\nggdag(Practice, layout=\"stress\")\n\n\n\n\n\n\n\nggdag_adjustment_set(Practice)"
+  },
+  {
+    "objectID": "Tutorial2.html#control-for-collider",
+    "href": "Tutorial2.html#control-for-collider",
+    "title": "Tutorial 2 Directed Acyclic Graphs",
+    "section": "Control for collider?",
+    "text": "Control for collider?\nIn the lecture, we emphasized that we should never control/block a collider. Because doing so induces a fake correlation between its parent variables, even if they were originally independent.\nTo formally analyze whether variables are conditionally independent (d-separated) or conditionally related (d-connected) in a DAG, we can use the function ggdag_dseparated().\n\n# First create a DAG with a collider\nIncomeHealth &lt;- dagify(\n  Wine ~ Income + Health,\n  exposure = \"Income\",\n  outcome = \"Health\"\n)\n\nggdag(IncomeHealth, layout='tree')\n\n\n\n\n\n\n\nggdag_dseparated(IncomeHealth)\n\n\n\n\n\n\n\n\nWe see that Health and Income are d-separated, meaning they are independent. Let’s see what happens if we control for the collider.\n\nggdag_dseparated(IncomeHealth,\n  controlling_for = \"Wine\")\n\n\n\n\n\n\n\n\nNow we see after controlling the collider, Health and Income become d-connected, meaning we are creating a fake relationship between them."
+  },
+  {
+    "objectID": "Tutorial2.html#blocking-the-frontdoor",
+    "href": "Tutorial2.html#blocking-the-frontdoor",
+    "title": "Tutorial 2 Directed Acyclic Graphs",
+    "section": "Blocking the frontdoor?",
+    "text": "Blocking the frontdoor?\nFrontdoor adjustment leverages the mediator as a tool to estimate the causal effect of X on Y. It does not simply ‘control for’ or ‘block’ the mediator in the same way we adjust for confounder. We will discuss frontdoor adjustment in more detail during the Mediation Analysis week. For now, let’s explore what happens when we block the mediator.\n\n# First create a DAG with a mediator\nwinedrug &lt;- dagify(\n  Lifespan ~ Drug,\n  Drug ~ Wine,\n  exposure = \"Wine\",\n  outcome = \"Lifespan\"\n)\n\nggdag(winedrug, layout='stress')\n\n\n\n\n\n\n\nggdag_dseparated(winedrug)\n\n\n\n\n\n\n\nggdag_dseparated(winedrug, controlling_for = \"Drug\")"
   }
 ]
