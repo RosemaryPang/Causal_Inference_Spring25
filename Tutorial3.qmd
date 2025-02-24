@@ -1,0 +1,250 @@
+---
+title: "Tutorial 3 Randomization Design"
+pagetitle: Tutorial_3
+---
+
+Randomization is a fundamental principle in experimental design that helps ensure unbiased causal inference. In this tutorial, you'll learn how to implement different randomization techniques in R using the `randomizr` package. By the end of this tutorial, you should be familiar with the following:
+
+1. packages `randomizr`
+
+2. Simple random assignment
+
+3. Complete random assignment
+
+4. Block random assignment
+
+5. Clustered assignment
+
+6. Blocked and clustered assignment
+
+# Front-end Matters
+
+`randomizr` is a lightweight R package designed to simplify the random assignment process in experiments. It provides a transparent, flexible, and reproducible way to assign units to treatment and control groups using various randomization designs. Proper randomization is essential for ensuring valid causal inference, but in many studies, the details of how treatment was assigned are often lost or imprecisely documented. `randomizr` helps researchers generate, document, and replicate random assignments with ease, reducing errors and improving experimental rigor.
+
+```{r}
+#install.packages("randomizr")
+
+library(randomizr)
+```
+
+# Simulating data for demonstration
+
+We'll simulate a dataset of 600 individuals, each with attributes such as *FavoriteFruit*, *PreferredDrink*, and *AgeGroup*. Additionally, we'll introduce **Region** to represent **clustering** and **DietType** to represent **blocks**.
+
+```{r}
+set.seed(123)  
+
+N <- 600
+
+# Simulate attributes
+FavoriteFruit <- sample(c("Apple", "Banana", "Cherry", "Orange"), N, replace = TRUE)
+PreferredDrink <- sample(c("Water", "Juice", "Soda", "Tea"), N, replace = TRUE)
+AgeGroup <- sample(c("Child", "Teen", "Adult", "Senior"), N, replace = TRUE)
+
+# Simulate clusters (Regions)
+Region <- sample(paste("Region", 1:6), N, replace = TRUE)
+
+# Simulate blocks (Diet Types)
+DietType <- sample(c("Vegetarian", "Vegan", "Keto", "Low-fat"), N, replace = TRUE)
+
+# Combine into a data frame
+simulated_data <- data.frame(
+  FavoriteFruit,
+  PreferredDrink,
+  AgeGroup,
+  Region,
+  DietType
+)
+
+# Display the first few rows of the dataset
+head(simulated_data)
+```
+
+We now need to create simulated potential outcomes. We’ll call the untreated outcome $Y0$ and we’ll call the treated outcome $Y1$. If we were really running an experiment, we would only observe either $Y0$ or $Y1$ for each subject, but since we are simulating, we generate both. Our **inferential target** is the average treatment effect (**ATE**), which is defined as the average difference between $Y0$ and $Y1$.
+
+```{r}
+# Convert categorical variables to factors
+simulated_data$AgeGroup <- factor(simulated_data$AgeGroup, levels = c("Child", "Teen", "Adult", "Senior"))
+simulated_data$DietType <- factor(simulated_data$DietType, levels = c("Vegetarian", "Vegan", "Keto", "Low-fat"))
+
+# Assign numerical values to AgeGroup and DietType for outcome calculation
+age_effect <- as.numeric(simulated_data$AgeGroup)
+diet_effect <- as.numeric(simulated_data$DietType)
+
+# Calculate potential outcomes
+set.seed(123)  # For reproducibility
+simulated_data$Y0 <- rnorm(N, mean = 10 + age_effect - diet_effect, sd = 3)
+simulated_data$Y1 <- simulated_data$Y0 + 2*age_effect + 3*diet_effect 
+
+# Display the first few rows with outcomes
+head(simulated_data)
+
+# Calculate true ATE
+ATE_true <- with(simulated_data, mean(Y1 - Y0))
+print(ATE_true)
+```
+
+We are now ready to allocate treatment assignments to subjects. Let’s start by contrasting simple and complete random assignment.
+
+# Simple random assignment
+
+Simple random assignment assigns all subjects to treatment with an equal probability by flipping a (weighted) coin for each subject. The main trouble with simple random assignment is that a different number of subjects might be assigned to each group.
+
+`simple_ra()` assumes a two-group design and a 0.50 probability of assignmen. Note that if we don't set seed, the number of subject in each group is subject to change.
+
+```{r}
+set.seed(123)
+Z <- simple_ra(N=N)
+table(Z)
+```
+
+We can compare the ATE from the randomized experiment, and compare it with the true ATE.
+
+```{r}
+# Assign treatment and control groups based on random assignment
+simulated_data2 <- cbind(simulated_data,Z)
+
+Y_observed <- ifelse(simulated_data2$Z == 1, simulated_data2$Y1, simulated_data2$Y0)
+
+ATE_est <- mean(Y_observed[Z == 1]) - mean(Y_observed[Z == 0])
+print(ATE_est)
+```
+
+This estimated ATE is pretty close to the true ATE (12.41). This suggests that this random sample is a good representation of the population.
+
+We can also change the probability of assignment, by specifying the `prob` argument. `prob` indicates the percentage that receive the treatment.
+
+```{r}
+Z <- simple_ra(N = N, prob = 0.30)
+table(Z)
+```
+
+Is this still a good representation of the population?
+
+```{r}
+# Assign treatment and control groups based on random assignment
+simulated_data2 <- cbind(simulated_data,Z)
+
+Y_observed <- ifelse(simulated_data2$Z == 1, simulated_data2$Y1, simulated_data2$Y0)
+
+ATE_est <- mean(Y_observed[Z == 1]) - mean(Y_observed[Z == 0])
+print(ATE_est)
+```
+
+Even after changing the percentage of receiving treatment, it still suggests a good representation of the population.
+
+**Simple random assignment ensures that the treatment and control groups are representative of the population, regardless of the percentage assigned to treatment.**
+
+# Complete random assignment
+
+Complete random assignment is very similar to simple random assignment, except that the researcher can specify exactly how many units are assigned to each condition.
+
+If you only specify *N*, `complete_ra()` assigns exactly half of the subjects to treatment.
+
+```{r}
+Z <- complete_ra(N = N)
+table(Z)
+```
+
+To change the number of units assigned, specify the *m* argument
+
+```{r}
+Z <- complete_ra(N = N, m = 200)
+table(Z)
+```
+
+Is Complete random assignment a good representation of the population?
+
+```{r}
+# Assign treatment and control groups based on random assignment
+simulated_data2 <- cbind(simulated_data,Z)
+
+Y_observed <- ifelse(simulated_data2$Z == 1, simulated_data2$Y1, simulated_data2$Y0)
+
+ATE_est <- mean(Y_observed[Z == 1]) - mean(Y_observed[Z == 0])
+print(ATE_est)
+```
+
+Again, the estimated ATE is very close to the real ATE, which suggests a good representation of the population.
+
+When should you use `simple_ra()` versus `complete_ra()`? Basically, if the number of units is known beforehand, `complete_ra()` is always preferred, since researchers can plan exactly how many treatments will be deployed.
+
+# Block random assignment
+
+Block random assignment, also known as stratified random assignment, is a powerful technique for improving the precision and interpretability of experimental results. In this design, subjects are first grouped into blocks based on pre-treatment characteristics, and then randomization occurs separately within each block. In our study, the blocking variable is Diet Type, which includes four categories: Vegetarian, Vegan, Omnivore, and Pescatarian. By blocking on diet type, we ensure that each dietary group has an approximately equal proportion of treated and control units, allowing for fair comparisons within each group. Blocking is particularly useful when we suspect that treatment effects may differ across diet types—for example, the treatment may have a stronger effect on one group than another.
+
+Blocking also enhances statistical precision when the blocking variable is correlated with the outcome. Since dietary habits may influence health-related outcomes, blocking on diet type helps reduce random variation and improves the accuracy of our treatment effect estimates.
+
+The only required argument to `block_ra()` is **blocks**. Blocks can be a factor, character, or numeric variable. For example, when simulating data, we set **DietType** as a block.
+
+```{r}
+Z <- block_ra(blocks = simulated_data$DietType)
+table(Z, simulated_data$DietType)
+```
+
+Now we see for each diet type, the subjects are devided equally into treatment and control group.
+
+```{r}
+Z <- block_ra(N)
+table(Z)
+```
+
+If we have multiple blocking variables -- for example, DietType, FavoriteFruit, and PreferredDrink -- we need to create a single composite blocking variable that uniquely identifies each combination of these three factors.
+
+```{r}
+# Create a composite block variable by pasting the three factors together
+simulated_data$CompositeBlock <- paste(simulated_data$DietType, simulated_data$FavoriteFruit, simulated_data$PreferredDrink, sep = "_")
+
+# Perform block random assignment using the composite block
+Z <- block_ra(blocks = simulated_data$CompositeBlock)
+
+# Check treatment assignment within each block
+head(table(Z, simulated_data$CompositeBlock))
+```
+
+Comparing the estimated ATE with the real ATE, it shows block random assignment is still representative of the population.
+
+```{r}
+# Assign treatment and control groups based on random assignment
+simulated_data2 <- cbind(simulated_data,Z)
+
+Y_observed <- ifelse(simulated_data2$Z == 1, simulated_data2$Y1, simulated_data2$Y0)
+
+ATE_est <- mean(Y_observed[Z == 1]) - mean(Y_observed[Z == 0])
+print(ATE_est)
+```
+
+# Clustered assignment
+
+Clustered random assignment occurs when entire pre-existing groups (**clusters**) -- rather than individuals -- are assigned to treatment or control. This is sometimes unavoidable in experiments where treatment naturally occurs at the group level, such as assigning entire households, classrooms, or villages to an intervention. 
+
+However, clustered assignment reduces the effective sample size, making it harder to detect treatment effects. If *outcomes within a cluster are highly correlated* (e.g., students in the same classroom perform similarly), the experiment effectively has *fewer independent observations*, reducing statistical power. In extreme cases, if outcomes are perfectly correlated within clusters, the *experiment's effective sample size is only equal to the number of clusters*, not the number of individuals. Despite these drawbacks, clustered randomization remains necessary in many field experiments where individual-level randomization is impractical or could lead to contamination between treated and control units. 
+
+In R, clustered assignment can be implemented using the `cluster_ra()` function, ensuring that all units within a given cluster receive the same treatment while maintaining randomization integrity.
+For example, when simulating data, we set **Region** as a cluster.
+
+```{r}
+Z <- cluster_ra(clusters = simulated_data$Region)
+
+table(simulated_data$Region, Z)
+```
+
+This shows that each cluster is either assigned to treatment or control. No two units within the same cluster are assigned to different conditions.
+
+# Blocked and clustered assignment
+
+The power of clustered experiments can sometimes be improved through blocking. In this scenario, whole clusters are members of a particular block – imagine villages nested within discrete regions, or classrooms nested within discrete schools.
+
+Since our data has **Region** to represent **clustering** and **DietType** to represent **blocks**, we can use `block_and_cluster_ra()` to conduct Blocked and clustered assignment.
+
+```{r}
+# Assign each Region to a single Diet Type (ensuring no overlap)
+region_diet_mapping <- aggregate(DietType ~ Region, data = simulated_data, FUN = function(x) unique(x)[1])
+simulated_data <- merge(simulated_data, region_diet_mapping, by = "Region", suffixes = c("", "_fixed"))
+simulated_data$DietType <- simulated_data$DietType_fixed
+simulated_data$DietType_fixed <- NULL  # Remove extra column
+
+Z <- block_and_cluster_ra(clusters = simulated_data$Region, blocks = simulated_data$DietType)
+head(table(simulated_data$Region, Z))
+head(table(simulated_data$DietType, Z))
+```
