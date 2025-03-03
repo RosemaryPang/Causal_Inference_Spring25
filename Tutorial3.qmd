@@ -90,7 +90,7 @@ We are now ready to allocate treatment assignments to subjects. Let’s start by
 
 Simple random assignment assigns all subjects to treatment with an equal probability by flipping a (weighted) coin for each subject. The main trouble with simple random assignment is that a different number of subjects might be assigned to each group.
 
-`simple_ra()` assumes a two-group design and a 0.50 probability of assignmen. Note that if we don't set seed, the number of subject in each group is subject to change.
+`simple_ra()` assumes a two-group design and a 0.50 probability of assignment. Note that if we don't set seed, the number of subject in each group is subject to change.
 
 ```{r}
 set.seed(123)

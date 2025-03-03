@@ -1,0 +1,164 @@
+---
+title: "Tutorial 4 Mediation Analysis"
+pagetitle: Tutorial_4
+---
+
+Mediation analysis is a key tool in causal inference, helping researchers understand how and why a treatment influences an outcome through an intermediate variable (mediator). In this tutorial, you'll learn how to implement both **traditional and causal mediation analysis** in R using the `mediation` package, as well as explore **structural equation modeling (SEM)** with the `lavaan` package. By the end of this tutorial, you should be familiar with the following:
+
+1. packages `mediation` and `lavaan`
+
+2. Traditional mediation analysis
+
+3. Causal mediation analysis
+
+4. Structural equation modeling
+
+# Front-end Matters
+
+The `mediation` and `lavaan` packages are essential tools for conducting **mediation analysis** and **structural equation modeling (SEM)** in R. The `mediation` package provides a framework for both traditional and causal mediation analysis, allowing researchers to estimate direct and indirect effects while accounting for confounding and sensitivity analyses. The `lavaan` package enables flexible SEM modeling, handling multiple mediators, latent variables, and complex causal pathways.
+
+```{r}
+#install.packages("mediation")
+#install.packages("lavaan")
+
+library(mediation)
+library(lavaan)
+```
+
+# Traditional mediation analysis
+
+In this section, we perform traditional mediation analysis using Baron and Kenny’s method. This approach involves a three-step regression process to assess whether the effect of an independent variable on an outcome is mediated through an intermediate variable.
+
+In this tutorial, we examine whether self-esteem serves as a mediator in the relationship between grades and happiness. In this dataset, X represents grades, Y represents happiness, and M represents self-esteem.
+
+```{r}
+tradata <- read.csv('http://static.lib.virginia.edu/statlab/materials/data/mediationData.csv')
+
+head(tradata)
+```
+
+**Step 1**, we want X to affect Y. If there is no relationship between X and Y, there is nothing to mediate. Although this is what Baron and Kenny originally suggested, this step is controversial. Even if we don’t find a significant association between X and Y, we could move forward to the next step if we have a good theoretical background about their relationship.
+
+```{r}
+step1 <- lm(Y ~ X, tradata)
+summary(step1)
+```
+
+Since X has a significant impact on Y, we can move on to the next step: **Step 2**, we want X to affect M. If X and M have no relationship, M is just a third variable that may or may not be associated with Y. A mediation makes sense only if X affects M.
+
+```{r}
+step2 <- lm(M ~ X, tradata)
+summary(step2)
+```
+
+Since X has a significant impact on M, we can move on to the next step: **Step 3**, we want M to affect Y, but X to no longer affect Y (or X to still affect Y but in a smaller magnitude). If a mediation effect exists, the effect of X on Y will disappear (or at least weaken) when M is included in the regression. The effect of X on Y goes through M.
+
+```{r}
+step3 <- lm(Y ~ X + M, tradata)
+summary(step3)
+```
+
+If the effect of X on Y completely disappears, M fully mediates between X and Y (full mediation). If the effect of X on Y still exists, but in a smaller magnitude, M partially mediates between X and Y (partial mediation). The example shows a full mediation, yet a full mediation rarely happens in practice.
+
+Once we find these relationships, we want to see if this mediation effect is statistically significant. To do so, there are two main approaches: the Sobel test and bootstrapping.
+
+Sobel test is a parametric test used to determine whether the indirect effect (a × b) is statistically significant. It uses the standard errors of a (X → M) and b (M → Y) to compute a Z-score, testing if the indirect effect is significantly different from zero. Sobel test assumes normality of the indirect effect, and requires large sample size.
+
+```{r}
+library(bda)
+
+# Extract coefficients and standard errors
+a <- coef(step2)["X"]  # Effect of X on M
+b <- coef(step3)["M"]  # Effect of M on Y
+sa <- summary(step2)$coefficients["X", "Std. Error"]  # SE of a
+sb <- summary(step3)$coefficients["M", "Std. Error"]  # SE of b
+
+# Sobel Test Calculation
+sobel_z <- (a * b) / sqrt((b^2 * sa^2) + (a^2 * sb^2))
+sobel_p <- 2 * (1 - pnorm(abs(sobel_z)))  # Two-tailed p-value
+
+# Print results
+cat("Sobel Test Z-score:", sobel_z, "\n")
+cat("Sobel Test p-value:", sobel_p, "\n")
+
+```
+
+Bootstrapping, in contrast, is a non-parametric method that repeatedly resamples the dataset to create an empirical distribution of the mediation effect. Instead of assuming normality, it estimates confidence intervals (CIs) from thousands of resamples. Bootstrapping has key advantages including no normality assumption, higher statistical power, and works with small samples. Bootstrapping is strongly recommended in recent years.
+
+```{r}
+library(boot)
+
+# Define function to compute indirect effect
+indirect_effect <- function(data, indices) {
+  d <- data[indices, ]  # Resample data
+  a <- coef(lm(M ~ X, data = d))["X"]
+  b <- coef(lm(Y ~ X + M, data = d))["M"]
+  return(a * b)  # Indirect effect
+}
+
+# Perform bootstrapping
+set.seed(123)
+boot_results <- boot(data = tradata, statistic = indirect_effect, R = 1000)
+
+# Print bootstrapped confidence intervals
+boot.ci(boot_results, type = "perc")
+```
+
+Both tests indicate a significant mediation effect. We conclude that **Grades positively influence happiness by increasing self-esteem.**
+
+However, traditional mediation analysis has key limitations -- it relies on correlational assumptions and does not explicitly model counterfactual outcomes. This means that while we observe a mediation effect, we cannot make strong causal claims about whether self-esteem truly transmits the effect of grades on happiness.
+
+# Causal mediation analysis
+
+To address these limitations, we turn to causal mediation analysis, which is implemented in R using the mediation package. While the first steps look similar to Baron & Kenny’s approach—fitting regression models for the mediator and outcome—the mediate() function goes beyond simple associations by using a counterfactual framework to estimate the **Average Causal Mediation Effect (ACME)** and **Average Direct Effect (ADE)**. This allows for a formal causal interpretation of mediation effects, assuming key assumptions hold.
+
+## Simple model
+
+```{r}
+results <- mediate(step2, step3, treat='X', mediator='M',boot=TRUE, sims=500)
+summary(results)
+
+plot(results)
+```
+
+The **total effect** in the summary is $b_1$ in the fist step: total effect of X on Y without M. The **direct effect (ADE)** is $b_4$ in the third step: a direct effect of X on Y after taking into account of a mediator effect of M. The **mediation effect (ACME)** is the total effect minus the direct effect ($b_1-b_4$), which equals to the product of a coefficient of X in the second step and a coefficient of M in the last step ($b_2*b_3$). The goal of mediation analysis is to obtain this mediation effect and see if it’s statistically significant.
+
+Let's look into a more complicated model. We're using *job* data in `mediation` package.
+
+## Model with covariates
+
+We use the *jobs* data from `mediation` package. This dataset is from the Job Search Intervention Study. In this dataset, people in the treatment group participated in job-skills workshops (treat). The outcome variable is a continuous measure of depressive symptoms (depress2). A continuous measure of job-search self efficacy represents a key mediating variable (job_seek). And we also have a list of covariates, including pre-treatment level of depression (depress1), education (educ), income, race(nonwhite), marital status (marrital), age, sex, previous occupation (occp), and the level of economic hardship (econ_hard).
+
+```{r}
+data("jobs")
+head(jobs)
+```
+
+For causal mediation analysis, we first estimate two linear regressions for both the mediator and the outcome.
+
+```{r}
+model.m <- lm(job_seek ~ treat + depress1 + econ_hard + sex + age + occp + marital + nonwhite + educ + income, data = jobs)
+
+model.y <- lm(depress2 ~ treat + job_seek + depress1 + econ_hard + sex + age + occp + marital + nonwhite + educ + income, data = jobs)
+
+out.1 <- mediate(model.m, model.y, sims = 1000, boot = TRUE, treat = "treat",
+mediator = "job_seek")
+
+summary(out.1)
+```
+
+The job-skills workshop reduces depressive symptoms, at least in part, by increasing job-seeking behavior.
+
+## Sensitivity
+
+We can quickly run a sensitivity analysis using the `medsens()` function from the mediation package. This will help assess how unmeasured confounding between the mediator (job_seek) and outcome (depress2) could affect your results.
+
+```{r}
+sens.out <- medsens(out.1, sims = 1000)
+
+summary(sens.out)
+
+plot(sens.out)
+```
+
+ρ (rho) represents the correlation between residual confounders that affect both the mediator (job_seek) and the outcome (depress2). ρ = -0.2 means that for the mediation effect (ACME) to completely disappear, an unmeasured confounder would need to create a correlation of -0.2 between the errors in M and Y. Since ρ = -0.2 is relatively small, the mediation effect is somewhat sensitive to hidden confounders.

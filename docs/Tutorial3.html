@@ -167,6 +167,10 @@ window.Quarto = {
     <a class="nav-link active" href="./Tutorial3.html" aria-current="page"> 
 <span class="menu-text">Tutorial3</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial4.html"> 
+<span class="menu-text">Tutorial4</span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -309,7 +313,7 @@ window.Quarto = {
 <section id="simple-random-assignment" class="level1">
 <h1>Simple random assignment</h1>
 <p>Simple random assignment assigns all subjects to treatment with an equal probability by flipping a (weighted) coin for each subject. The main trouble with simple random assignment is that a different number of subjects might be assigned to each group.</p>
-<p><code>simple_ra()</code> assumes a two-group design and a 0.50 probability of assignmen. Note that if we don’t set seed, the number of subject in each group is subject to change.</p>
+<p><code>simple_ra()</code> assumes a two-group design and a 0.50 probability of assignment. Note that if we don’t set seed, the number of subject in each group is subject to change.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>Z <span class="ot">&lt;-</span> <span class="fu">simple_ra</span>(<span class="at">N=</span>N)</span>
