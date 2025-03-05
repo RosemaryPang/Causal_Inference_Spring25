@@ -162,3 +162,110 @@ plot(sens.out)
 ```
 
 ρ (rho) represents the correlation between residual confounders that affect both the mediator (job_seek) and the outcome (depress2). ρ = -0.2 means that for the mediation effect (ACME) to completely disappear, an unmeasured confounder would need to create a correlation of -0.2 between the errors in M and Y. Since ρ = -0.2 is relatively small, the mediation effect is somewhat sensitive to hidden confounders.
+
+The graph shows how fast ACME approaches 0 as ρ increases. If the ACME estimate does not change much across different rho values, it means that the mediation effect is not highly sensitive to hidden confounding. In contrast, if ACME drops to zero (or changes drastically) with a small shift in rho, it indicates that even a small amount of unmeasured confounding could invalidate the mediation effect.
+
+## Mediator is also moderator
+
+We can also allow the causal mediation effect to vary with treatment status. Here, the **model for the outcome** must be altered by including an interaction term between the treatment indicator (treat) and the mediator variable (job_seek)
+
+```{r}
+model.y.inter <- lm(depress2 ~ treat + job_seek + treat:job_seek + depress1 + econ_hard + sex + age + occp + marital + nonwhite + educ + income, data = jobs)
+
+out.2 <- mediate(model.m, model.y.inter, sims = 1000, boot = TRUE, treat = "treat", mediator = "job_seek")
+
+summary(out.2)
+```
+
+Now estimates for the mediation effects, direct effects and proportion of total effect mediated correspond to the levels of the treatment. In this case, the mediation effect under the treatment condition, listed as ACME (treated) is estimated to be −.012, while the mediation effect under the control condition, ACME (control), is −.019.
+
+Both ACME values are negative, indicating that job-seeking behavior reduces depressive symptoms, regardless of whether individuals received treatment. However, the absolute value of ACME is larger for the control group (-0.0185) than for the treated group (-0.0117). This suggests that the indirect effect of job-seeking on depression is stronger when individuals did NOT receive treatment.
+
+When having a *mediate* object with interaction, we can select which treatment condition to plot the estimated effects for by selecting the *treatment* argument.
+
+```{r}
+plot(out.2, treatment = "both")
+
+#plot(out.2, treatment = "treated")
+#plot(out.2, treatment = "control")
+```
+
+Solid lines represent treated group, and dotted lines represent control group. We can also make sensitivity plots for different treatment conditions.
+
+```{r}
+sens.out.2 <- medsens(out.2, sims = 1000)
+summary(sens.out.2)
+plot(sens.out.2)
+```
+
+The `mediation` package is not limited to OLS models; it also supports mediation analysis for binary, ordinal, and other types of dependent variables, making it highly flexible for different study designs. For more details and documentation, visit the [mediation](https://cran.r-project.org/web/packages/mediation/mediation.pdf) package website.
+
+# Structural Equation Modeling (SEM)
+
+Structural Equation Modeling (SEM) is a powerful statistical framework that allows for estimating complex relationships among variables, including mediation effects. Unlike traditional mediation analysis, SEM enables researchers to simultaneously model multiple mediators, assess indirect and direct effects, and incorporate more flexible model specifications. In this tutorial, we focus on multiple mediation models, specifically **parallel mediation** (where multiple mediators operate independently) and **sequential mediation** (where mediators influence each other in a chain before affecting the outcome). By using SEM, we can gain deeper insights into how multiple pathways contribute to the overall effect of an independent variable on an outcome.
+
+The data we are using is downloaded from [here](https://drive.google.com/file/d/1Adn0FP1E82v2moLupRAj8EZZ3O09CtaT/view). Make sure you download the data before running the tutorial.
+
+This data includes independent variable (*mastery* goal), outcome (*achieve*ment), and multiple mediating variables, such as interest and anxiety.
+
+```{r}
+library(readxl)
+SEMdata <- read_excel("regression data.xls")
+head(SEMdata)
+```
+
+## Parallel mediation
+
+In parallel mediation, multiple mediators operate independently to explain the effect of an independent variable (X) on an outcome (Y). This means that each mediator contributes separately to the total mediation effect, without influencing each other.
+
+We first write down the model specifying all relationships. The indirect effects are defined to capture the mediation pathways: one through **interest** (mstr_int_achv = a × b) and another through **anxiety** (mstr_anxt_achv = c × d). The total effect combines all direct and indirect effects, allowing us to assess the full impact of mastery on achievement.
+
+```{r}
+model <- "achieve ~ b*interest + d*anxiety + e*mastery
+          interest ~ a*mastery
+          anxiety ~ c*mastery
+          mstr_int_achv := a*b
+          mstr_anxt_achv := c*d
+          Total := a*b + c*d + e
+"
+```
+
+In `lavaan`, the `:=` operator is used to define custom parameters based on existing model estimates. This is particularly useful in mediation analysis, where indirect effects need to be explicitly computed from path coefficients.
+
+```{r}
+fit <- sem(model, data = SEMdata, se="bootstrap", bootstrap = 1000)
+summary(fit, fit.measures = T, standardized = T, rsquare = T)
+```
+
+Results indicate that mastery goal has indirect effect of 0.162 on achievement through interest. But mastery goal doesn't have indirect effect on achievement through anxiety. Mastery goal has total effect of 0.524 on achievement. 
+
+## Sequential mediation
+
+In sequential mediation, the mediators are causally dependent on each other, forming a chain-like process where the effect of the independent variable (X) is transmitted through multiple steps before reaching the outcome (Y). Unlike parallel mediation, where mediators operate independently, sequential mediation assumes that **one mediator influences another** before affecting Y. This allows researchers to explore how intermediate mechanisms unfold over time. For example, in an educational setting, mastery might first enhance interest, which then reduces anxiety, ultimately leading to higher achievement.
+
+```{r}
+model2 <- "achieve ~ c*anxiety + e*interest + f*mastery
+           interest ~ a*mastery
+           anxiety ~ b*interest + d*mastery
+           mstr_int_anxt_achv := a*b*c
+           mstr_int_achv := a*e
+           mstr_anxt_achv := d*c
+           int_anxt_achv := b*c
+           total_mstr := a*b*c + a*e + d*c + f
+           total_int := b*c + e
+"
+```
+
+Note that in sequential mediation, it is not enough to only compute the total and indirect effects of the initial treatment variable (mastery). Since mediators influence one another in a chain, we must also consider the total and indirect effects of the first mediator (interest) to fully capture the mediation process. 
+
+```{r}
+fit2 <- sem(model2, data = SEMdata, se="bootstrap", bootstrap = 1000)
+summary(fit2, fit.measures = T, standardized = T, rsquare = T)
+```
+
+Results indicate that mastery goal has indirect effect of 0.162 on achievement through interest. But this indirect effect does not happen through anxiety. Mastery goal also show a total effect of 0.524 on achievement. 
+
+# Conclusion
+
+In this tutorial, we explored different approaches of mediation analysis, starting with traditional mediation analysis using the Baron and Kenny method, followed by causal mediation analysis and `mediation` package, which provides a counterfactual framework for estimating indirect effects. Finally, we applied Structural Equation Modeling (SEM) to mediation, focusing on parallel and sequential mediation models. SEM enables simultaneous estimation of multiple pathways, providing a more comprehensive framework for analyzing mediation effects. By combining these methods, we can better understand complex causal relationships and refine mediation analysis in research.
+
