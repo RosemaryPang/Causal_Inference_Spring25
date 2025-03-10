@@ -1,0 +1,127 @@
+---
+title: "Tutorial 5 Instrumental Variables"
+pagetitle: Tutorial_5
+---
+
+Instrumental variable estimation is a crucial tool in causal inference, allowing researchers to address endogeneity and obtain unbiased estimates when treatment assignment is not purely random. This tutorial will guide you through implementing instrumental variable estimation in R using Two-Stage Least Squares (2SLS), as well as testing for endogeneity, weak instruments, and overidentification.
+
+By the end of this tutorial, you will be familiar with:
+
+1. 2SLS in R
+
+2. Assessing instrument validity
+
+3. Estimating local average treatment effect (LATE)
+
+# Front-end Matters
+
+We use `AER` package for 2SLS.
+
+```{r}
+#install.packages("AER")
+library(AER)
+library(stargazer)
+```
+
+# Introducing dataset
+
+We use the `CigarettesSW` data from the `AER` package. It is a panel data set that contains observations on cigarette consumption and several economic indicators for all 48 continental federal states of the U.S. from 1985 to 1995. We consider data for the cross section of states in 1995 only.
+
+We want to know the relationship between **after-tax average real price per pack of cigarettes** (x) and **the number of cigarette packs per capita sold** (y). Since there is simultaneous causality between demand and supply, we need to use instrumental variable regression.
+
+The The instrumental variable we are going to use for instrumenting the endogenous regressor is *SalesTax*, the portion of taxes on cigarettes arising from the general sales tax. The idea is that *SalesTax* is a relevant instrument as it is included in the after-tax average price per pack. Also, it is plausible that *SalesTax* is exogenous since the sales tax does not influence quantity sold directly but indirectly through the price.
+
+```{r}
+data("CigarettesSW")
+summary(CigarettesSW)
+
+# compute real per capita prices
+CigarettesSW$rprice <- with(CigarettesSW, price / cpi)
+
+#  compute the sales tax
+CigarettesSW$salestax <- with(CigarettesSW, (taxs - tax) / cpi)
+
+# generate a subset for the year 1995
+c1995 <- subset(CigarettesSW, year == "1995")
+```
+
+# 2SLS
+
+## Simple regression model
+
+We first need to check if the independent variable (price) and the instrumental variable (sale tax) is correlated.
+
+```{r}
+cor(CigarettesSW$salestax, CigarettesSW$rprice)
+```
+
+Since x and z are highly correlated, we can move on to the 2SLS estimation.
+
+**Step 1**, $$log(Price)=\delta_0+\delta_1Tax+v$$
+
+```{r}
+cig_s1 <- lm(log(rprice) ~ salestax, data = c1995)
+summary(cig_s1)
+```
+
+**Step 2**, we estimate the fitted values obtained by the first stage regression
+
+```{r}
+lcigp_pred <- cig_s1$fitted.values
+```
+
+**Step 3**, we run the second stage regression $$log(packs)=\beta_0+\beta_1\hat{log_price}+\mu$$
+
+```{r}
+cig_s2 <- lm(log(c1995$packs) ~ lcigp_pred)
+summary(cig_s2)
+```
+
+Now we have the model $$log(pack)=9.72-1.08log(price)$$
+
+The function `ivreg()` from the package `AER` carries out TSLS procedure automatically and generates the same result.
+
+```{r}
+cig_ivreg <- ivreg(log(packs) ~ log(rprice) | salestax, data = c1995)
+summary(cig_ivreg)
+```
+
+Comparing the resuls of OLS regression, first, and second stage.
+
+```{r}
+cig_ols <- lm(log(packs) ~ log(rprice),data=c1995)
+
+stargazer(cig_ols,cig_s1,cig_s2,type = "text")
+```
+
+Using OLS regression, one unit increase in log(price) is associated with 1.21 decrease in log(pack). Using the 2SLS estimation, one unit increase in log(price) is associated with 1.08 decrease in log(pack), which is lower effect.
+
+## Multiple regression model
+
+Add income as a control variable.
+
+```{r}
+# add rincome to the dataset
+CigarettesSW$rincome <- with(CigarettesSW, income / population / cpi)
+CigarettesSW$cigtax <- with(CigarettesSW, tax/cpi)
+
+
+c1995 <- subset(CigarettesSW, year == "1995")
+```
+
+Estimate the model with one instrument: sales tax, and one control (income)
+
+```{r}
+cig_ivreg2 <- ivreg(log(packs) ~ log(rprice) + log(rincome) | log(rincome) + 
+                    salestax, data = c1995)
+summary(cig_ivreg2)
+```
+
+
+Now explore a model with one control (income) and two instruments: sales tax and cigtax
+
+```{r}
+cig_ivreg3 <- ivreg(log(packs) ~ log(rprice) + log(rincome) | 
+                    log(rincome) + salestax + cigtax, data = c1995)
+summary(cig_ivreg3)
+```
