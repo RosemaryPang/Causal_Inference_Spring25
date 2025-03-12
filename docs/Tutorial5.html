@@ -198,6 +198,12 @@ window.Quarto = {
   <li><a href="#simple-regression-model" id="toc-simple-regression-model" class="nav-link" data-scroll-target="#simple-regression-model">Simple regression model</a></li>
   <li><a href="#multiple-regression-model" id="toc-multiple-regression-model" class="nav-link" data-scroll-target="#multiple-regression-model">Multiple regression model</a></li>
   </ul></li>
+  <li><a href="#accessing-instrumental-validity" id="toc-accessing-instrumental-validity" class="nav-link" data-scroll-target="#accessing-instrumental-validity">Accessing Instrumental Validity</a>
+  <ul class="collapse">
+  <li><a href="#weak-instrument-test" id="toc-weak-instrument-test" class="nav-link" data-scroll-target="#weak-instrument-test">Weak instrument test</a></li>
+  <li><a href="#overidentification-test-sargan-hansen" id="toc-overidentification-test-sargan-hansen" class="nav-link" data-scroll-target="#overidentification-test-sargan-hansen">Overidentification test (Sargan-Hansen)</a></li>
+  <li><a href="#endogeneity-test-wu-hausman" id="toc-endogeneity-test-wu-hausman" class="nav-link" data-scroll-target="#endogeneity-test-wu-hausman">Endogeneity test (Wu-Hausman)</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -227,7 +233,6 @@ window.Quarto = {
 <p>By the end of this tutorial, you will be familiar with:</p>
 <p>1.&nbsp;2SLS in R</p>
 <p>2.&nbsp;Assessing instrument validity</p>
-<p>3.&nbsp;Estimating local average treatment effect (LATE)</p>
 <section id="front-end-matters" class="level1">
 <h1>Front-end Matters</h1>
 <p>We use <code>AER</code> package for 2SLS.</p>
@@ -377,36 +382,11 @@ F-statistic: 8.277 on 1 and 46 DF,  p-value: 0.006069</code></pre>
 </div>
 </div>
 <p>Now we have the model <span class="math display">\[log(pack)=9.72-1.08log(price)\]</span></p>
-<p>The function <code>ivreg()</code> from the package <code>AER</code> carries out TSLS procedure automatically and generates the same result.</p>
+<p>Comparing the results of OLS regression, first, and second stage.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>cig_ivreg <span class="ot">&lt;-</span> <span class="fu">ivreg</span>(<span class="fu">log</span>(packs) <span class="sc">~</span> <span class="fu">log</span>(rprice) <span class="sc">|</span> salestax, <span class="at">data =</span> c1995)</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(cig_ivreg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>
-Call:
-ivreg(formula = log(packs) ~ log(rprice) | salestax, data = c1995)
-
-Residuals:
-     Min       1Q   Median       3Q      Max 
--0.64619 -0.07732  0.02981  0.11283  0.41904 
-
-Coefficients:
-            Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept)   9.7199     1.5141   6.420 6.79e-08 ***
-log(rprice)  -1.0836     0.3166  -3.422  0.00131 ** 
----
-Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-Residual standard error: 0.1904 on 46 degrees of freedom
-Multiple R-Squared: 0.4011, Adjusted R-squared: 0.3881 
-Wald test: 11.71 on 1 and 46 DF,  p-value: 0.001313 </code></pre>
-</div>
-</div>
-<p>Comparing the resuls of OLS regression, first, and second stage.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>cig_ols <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">log</span>(packs) <span class="sc">~</span> <span class="fu">log</span>(rprice),<span class="at">data=</span>c1995)</span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="fu">stargazer</span>(cig_ols,cig_s1,cig_s2,<span class="at">type =</span> <span class="st">"text"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>cig_ols <span class="ot">&lt;-</span> <span class="fu">lm</span>(<span class="fu">log</span>(packs) <span class="sc">~</span> <span class="fu">log</span>(rprice),<span class="at">data=</span>c1995)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">stargazer</span>(cig_ols,cig_s1,cig_s2,<span class="at">type =</span> <span class="st">"text"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 ==============================================================
@@ -437,20 +417,44 @@ F Statistic (df = 1; 46)      31.409***   40.956***  8.277***
 Note:                              *p&lt;0.1; **p&lt;0.05; ***p&lt;0.01</code></pre>
 </div>
 </div>
-<p>Using OLS regression, one unit increase in log(price) is associated with 1.21 decrease in log(pack). Using the 2SLS estimation, one unit increase in log(price) is associated with 1.08 decrease in log(pack), which is lower effect.</p>
+<p>Using OLS regression, a 1% increase in log(price) is associated with 1.21% decrease in log(pack). Using the 2SLS estimation, 1% increase in log(price) is associated with 1.08% decrease in log(pack), which is lower effect.</p>
+<p>However, although 2SLS correctly estimates the coefficient, the standard error needs to be corrected. The function <code>ivreg()</code> from the package <code>AER</code> carries out 2SLS procedure automatically and generates the same coefficient and corrected standard error. Now we see the standard error of <em>log(rprice)</em> in 2SLS model (0.317) is higher than the standard error from the OLS regression (0.216). The 2SLS model also reports a lower level of significance.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>cig_ivreg <span class="ot">&lt;-</span> <span class="fu">ivreg</span>(<span class="fu">log</span>(packs) <span class="sc">~</span> <span class="fu">log</span>(rprice) <span class="sc">|</span> salestax, <span class="at">data =</span> c1995)</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(cig_ivreg)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+ivreg(formula = log(packs) ~ log(rprice) | salestax, data = c1995)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.64619 -0.07732  0.02981  0.11283  0.41904 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)   9.7199     1.5141   6.420 6.79e-08 ***
+log(rprice)  -1.0836     0.3166  -3.422  0.00131 ** 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1904 on 46 degrees of freedom
+Multiple R-Squared: 0.4011, Adjusted R-squared: 0.3881 
+Wald test: 11.71 on 1 and 46 DF,  p-value: 0.001313 </code></pre>
+</div>
+</div>
 </section>
 <section id="multiple-regression-model" class="level2">
 <h2 class="anchored" data-anchor-id="multiple-regression-model">Multiple regression model</h2>
-<p>Add income as a control variable.</p>
+<p>After learning the simple regression, let’s add <em>income</em> as a control variable.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># add rincome to the dataset</span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>CigarettesSW<span class="sc">$</span>rincome <span class="ot">&lt;-</span> <span class="fu">with</span>(CigarettesSW, income <span class="sc">/</span> population <span class="sc">/</span> cpi)</span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>CigarettesSW<span class="sc">$</span>cigtax <span class="ot">&lt;-</span> <span class="fu">with</span>(CigarettesSW, tax<span class="sc">/</span>cpi)</span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>c1995 <span class="ot">&lt;-</span> <span class="fu">subset</span>(CigarettesSW, year <span class="sc">==</span> <span class="st">"1995"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>c1995 <span class="ot">&lt;-</span> <span class="fu">subset</span>(CigarettesSW, year <span class="sc">==</span> <span class="st">"1995"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Estimate the model with one instrument: sales tax, and one control (income)</p>
+<p>We first estimate the model with one instrument (sales tax) and one control (income). In the function below, left of <code>|</code> shows the dependent variable <em>log(packs)</em>, the endogenous variable <em>log(rprice)</em>, and the exogenous variable, or control variable, <em>log(rincome)</em>. Right of the <code>|</code> shows the exogenous variable <em>log(rincome)</em> and instrumental variable <em>salestax</em>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>cig_ivreg2 <span class="ot">&lt;-</span> <span class="fu">ivreg</span>(<span class="fu">log</span>(packs) <span class="sc">~</span> <span class="fu">log</span>(rprice) <span class="sc">+</span> <span class="fu">log</span>(rincome) <span class="sc">|</span> <span class="fu">log</span>(rincome) <span class="sc">+</span> </span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>                    salestax, <span class="at">data =</span> c1995)</span>
@@ -478,7 +482,9 @@ Multiple R-Squared: 0.4189, Adjusted R-squared: 0.3931
 Wald test: 6.534 on 2 and 45 DF,  p-value: 0.003227 </code></pre>
 </div>
 </div>
-<p>Now explore a model with one control (income) and two instruments: sales tax and cigtax</p>
+<p>The estimated regression equation is <span class="math display">\[log(packs)=9.4307−1.1434log(rprice)+0.2145log(rincome)\]</span> A 1% increase in cigarette price is associated with a 1.14% decrease in cigarette sales. The impact is statisically significant at 1% level.</p>
+<p>Now explore a model with one control (income) and two instruments (sales tax and cigtax). When the number of instruments exceeds the number of endogenous variables, the model is overidentified. This allows us to test the validity of the instruments using an overidentification test. More instruments can also help reduce standard errors in 2SLS, improving the statistical power of estimates.</p>
+<p>Same as the previous model, left of the <code>|</code> shows the dependent variable, endogenous variable, and the control variable. Right of the <code>|</code> shows the control variable, and <strong>two</strong> instrumental variables.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>cig_ivreg3 <span class="ot">&lt;-</span> <span class="fu">ivreg</span>(<span class="fu">log</span>(packs) <span class="sc">~</span> <span class="fu">log</span>(rprice) <span class="sc">+</span> <span class="fu">log</span>(rincome) <span class="sc">|</span> </span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">log</span>(rincome) <span class="sc">+</span> salestax <span class="sc">+</span> cigtax, <span class="at">data =</span> c1995)</span>
@@ -506,6 +512,59 @@ Multiple R-Squared: 0.4294, Adjusted R-squared: 0.4041
 Wald test: 13.28 on 2 and 45 DF,  p-value: 2.931e-05 </code></pre>
 </div>
 </div>
+<p>The estimated regression equation is <span class="math display">\[log(packs)=9.8950−1.2774log(rprice)+0.2804log(rincome)\]</span> A 1% increase in cigarette price is associated with a 1.28% decrease in cigarette sales. The effect is highly significant.</p>
+</section>
+</section>
+<section id="accessing-instrumental-validity" class="level1">
+<h1>Accessing Instrumental Validity</h1>
+<section id="weak-instrument-test" class="level2">
+<h2 class="anchored" data-anchor-id="weak-instrument-test">Weak instrument test</h2>
+<p>To ensure the instruments (sales tax and cigarette tax) are strong predictors of the endogenous variable (log(rprice)), we perform a weak instrument test using the first-stage F-statistic.</p>
+<p>Rule of thumb: If F &gt; 10, the instruments are strong; if F &lt; 10, they are weak, leading to biased IV estimates.</p>
+</section>
+<section id="overidentification-test-sargan-hansen" class="level2">
+<h2 class="anchored" data-anchor-id="overidentification-test-sargan-hansen">Overidentification test (Sargan-Hansen)</h2>
+<p>When there are more instruments than endogenous variables, the model is overidentified, allowing us to test whether the instruments are truly exogenous. The Sargan-Hansen J-test checks if the instruments are uncorrelated with the error term. A <strong>high</strong> p-value (&gt;0.05) suggests that the instruments are <strong>valid</strong>, while a low p-value indicates that at least one instrument may be invalid. This test helps ensure that our IV estimates are not biased due to instrument endogeneity.</p>
+</section>
+<section id="endogeneity-test-wu-hausman" class="level2">
+<h2 class="anchored" data-anchor-id="endogeneity-test-wu-hausman">Endogeneity test (Wu-Hausman)</h2>
+<p>The Wu-Hausman test checks whether an explanatory variable is endogenous, meaning it is correlated with the error term. If endogeneity is present, OLS estimates are biased and inconsistent, making IV estimation necessary. The test compares the results of OLS and IV regressions—if the two estimates significantly differ, it suggests that the endogenous variable should be instrumented. A low p-value (p &lt; 0.05) indicates that OLS is biased, confirming the need for IV, while a high p-value suggests that OLS may be sufficient. In R, this test can be performed using summary(iv_model, diagnostics = TRUE).</p>
+<p>We can use one function to conduct all three tests:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(cig_ivreg3,<span class="at">diagnostics =</span> T)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+ivreg(formula = log(packs) ~ log(rprice) + log(rincome) | log(rincome) + 
+    salestax + cigtax, data = c1995)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-0.6006931 -0.0862222 -0.0009999  0.1164699  0.3734227 
+
+Coefficients:
+             Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)    9.8950     1.0586   9.348 4.12e-12 ***
+log(rprice)   -1.2774     0.2632  -4.853 1.50e-05 ***
+log(rincome)   0.2804     0.2386   1.175    0.246    
+
+Diagnostic tests:
+                 df1 df2 statistic p-value    
+Weak instruments   2  44   244.734  &lt;2e-16 ***
+Wu-Hausman         1  44     3.068  0.0868 .  
+Sargan             1  NA     0.333  0.5641    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.1879 on 45 degrees of freedom
+Multiple R-Squared: 0.4294, Adjusted R-squared: 0.4041 
+Wald test: 13.28 on 2 and 45 DF,  p-value: 2.931e-05 </code></pre>
+</div>
+</div>
+<p>Results show that:</p>
+<p>First, for weak instrument test, F&gt;10, confirming that sales tax and cigarette tax are strongly correelated with price. Weak instrument bias is not a concern.</p>
+<p>Second, for endogeneity test, the null hypothesis is <em>log(rprice)</em> is exogenous, meaning we can use OLS model instead of instrumental variable. Since p&gt;0.05, we fail to reject the null hypothesis, meaning we have evidence for endogeneity and instrumental variable is preferred.</p>
+<p>Finally, for overidentification test, the null hypothesis is the instruments are valid (uncorrelated with the error term). Since p&gt;0.05, we fail to reject the null hypothesis, meaning both sales tax and cigarette tax are likely valid instruments.</p>
 
 
 </section>
