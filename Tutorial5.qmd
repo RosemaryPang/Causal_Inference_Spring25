@@ -64,6 +64,7 @@ summary(cig_s1)
 
 **Step 2**, we estimate the fitted values obtained by the first stage regression
 
+**Step 2** predict endogenous variable price
 ```{r}
 lcigp_pred <- cig_s1$fitted.values
 ```
@@ -116,7 +117,7 @@ summary(cig_ivreg2)
 
 The estimated regression equation is
 $$log(packs)=9.4307−1.1434log(rprice)+0.2145log(rincome)$$
-A 1\% increase in cigarette price is associated with a 1.14\% decrease in cigarette sales. The impact is statisically significant at 1\% level.
+A 1\% increase in cigarette price is associated with a 1.14\% decrease in cigarette sales. The impact is statistically significant at 1\% level.
 
 Now explore a model with one control (income) and two instruments (sales tax and cigtax). When the number of instruments exceeds the number of endogenous variables, the model is overidentified. This allows us to test the validity of the instruments using an overidentification test. More instruments can also help reduce standard errors in 2SLS, improving the statistical power of estimates.
 
@@ -146,7 +147,7 @@ When there are more instruments than endogenous variables, the model is overiden
 
 ## Endogeneity test (Wu-Hausman)
 
-The Wu-Hausman test checks whether an explanatory variable is endogenous, meaning it is correlated with the error term. If endogeneity is present, OLS estimates are biased and inconsistent, making IV estimation necessary. The test compares the results of OLS and IV regressions—if the two estimates significantly differ, it suggests that the endogenous variable should be instrumented. A low p-value (p < 0.05) indicates that OLS is biased, confirming the need for IV, while a high p-value suggests that OLS may be sufficient. In R, this test can be performed using summary(iv_model, diagnostics = TRUE).
+The Wu-Hausman test checks whether an explanatory variable is endogenous, meaning it is correlated with the error term. If endogeneity is present, OLS estimates are biased and inconsistent, making IV estimation necessary. The test compares the results of OLS and IV regressions -- if the two estimates significantly differ, it suggests that the endogenous variable should be instrumented. A low p-value (p < 0.05) indicates that OLS is biased, confirming the need for IV, while a high p-value suggests that OLS may be sufficient. 
 
 We can use one function to conduct all three tests:
 
@@ -158,7 +159,8 @@ Results show that:
 
 First, for weak instrument test, F>10, confirming that sales tax and cigarette tax are strongly correelated with price. Weak instrument bias is not a concern.
 
-Second, for endogeneity test, the null hypothesis is *log(rprice)* is exogenous, meaning we can use OLS model instead of instrumental variable. Since p>0.05, we fail to reject the null hypothesis, meaning we have evidence for endogeneity and instrumental variable is preferred. 
+Second, for endogeneity test, a low p-value (p < 0.05) indicates that OLS is biased, and we should use instrumental variable. Since p>0.05, we do not have strong evidence that log(rprice) is endogenous.
+So OLS may be sufficient, but IV can still be used if we suspect unobserved confounders. 
 
 Finally, for overidentification test, the null hypothesis is the instruments are valid (uncorrelated with the error term). Since p>0.05, we fail to reject the null hypothesis, meaning both sales tax and cigarette tax are likely valid instruments.
 
