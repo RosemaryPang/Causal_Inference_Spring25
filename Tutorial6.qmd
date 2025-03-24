@@ -1,0 +1,209 @@
+---
+title: "Tutorial 6 Panel Data Analysis"
+pagetitle: Tutorial_6
+---
+
+Panel data analysis is a powerful tool in causal inference, enabling researchers to control for unobserved, time-invariant confounding and analyze changes within units over time. This tutorial will guide you through key panel data methods in R, from data preparation to advanced causal modeling. We will use tidyverse tools to reshape and explore panel data, and estimate fixed effects, random effects, and nonlinear models. We'll also explore how to extend these models to include mediation analysis and instrumental variables within a panel framework.
+
+By the end of this tutorial, you will be familiar with:
+
+1 .\ The structure of panel data 
+
+2 .\ Estimating fixed and random effects models
+
+3 .\ Models with nonlinear outcomes
+
+4 .\ Incorporating mediation and instrumental variable approaches in panel data
+
+# Front-end Matters
+
+We use `fixest` package for fixed effect model. For random effect, we also use the `plm` package. For mediation analysis and instrumental variable in panel data, we'll use a combination of `fixest` and the packages we introduced earlier: `mediation` and `AER`. 
+
+The `fixest` package is a powerful and efficient tool for estimating fixed effects models in R. It supports multi-way fixed effects (e.g., individual and time), clustered standard errors, and instrumental variable estimation — all with a clean and flexible syntax. It’s well-suited for large datasets and is increasingly popular in applied causal inference research.
+
+The `plm` package is a classic package for panel data analysis in R. It provides a consistent interface for estimating fixed effects, random effects, and other panel-specific models like first differences and between estimators. While it’s less flexible than `fixest`, it remains a useful tool for learning core panel data methods and comparing estimation strategies like fixed vs. random effects.
+
+```{r}
+library(tidyverse)
+library(stargazer)
+library(mediation)
+library(AER)
+library(ggpubr)
+
+
+#install.packages("fixest")
+#install.packages("plm")
+library(fixest)
+library(plm)
+```
+
+# The structure of panel data
+
+Panel data consists of observations on multiple units (such as individuals, countries, or firms) tracked over multiple time periods. It involves observing the same units across time, although not every unit needs to appear in every time period — this is known as an unbalanced panel. Each row represents a unit at a specific time point, forming a long-format structure. This setup enables researchers to study within-unit change over time while controlling for time-invariant characteristics. By combining both cross-sectional and time-series dimensions, panel data offers powerful opportunities for causal inference.
+
+This is an example of long-format panel data:
+
+```{r}
+tidydata <- table1
+tidydata
+```
+
+But sometimes, when we receive data, it doesn’t come in the long format required for panel data analysis. Instead, it may be in a wide format, where repeated measurements for each unit (e.g., different years) appear as separate columns. 
+
+```{r}
+untidydata <- table4a
+untidydata
+```
+
+We’ll need to reshape this data into long format using `pivot_longer()` before we can analyze it as panel data.
+
+```{r}
+longer <- untidydata |>
+  pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "cases")
+#specifying the columns by column names
+
+longer
+```
+
+# Fixed Effect 
+
+## Textbook Example data
+
+This example dataset simulates a scenario where we observe multiple individuals over time and want to study the relationship between Intensity of Reminders (e.g., how often someone is nudged to eat healthy) and their Healthy Eating Score. The data includes four individuals, each observed eight times, with individual differences in both baseline behavior and response to reminders. This structure mimics panel data, where repeated observations are collected for the same units.
+
+The code below generates this data, ensuring some variation in reminder intensity and healthy eating behavior across individuals and time. We'll use this dataset to illustrate how different modeling strategies — including OLS, fixed effects, and demeaning — handle within- and between-individual variation.
+
+```{r}
+set.seed(2000)
+Demo <- tibble(Individual = factor(c(rep('You',8),rep('Me',8),
+                                   rep('Shamma',8),rep('Liqing',8)),levels = c('Me','You','Liqing','Shamma')),
+             IndNo = sort(rep(1:4,8))) %>%
+  mutate(IntensityOfReminders = runif(32)*5 + IndNo) %>%
+  mutate(HealthyEatingScore = runif(32)*10 + IntensityOfReminders - 2*IndNo) %>%
+  mutate(HealthyEatingScore = case_when(
+    HealthyEatingScore < 0 ~ 0,
+    TRUE ~ HealthyEatingScore))
+
+head(Demo)
+```
+Visualization:
+
+```{r}
+ggplot(Demo, aes(x = IntensityOfReminders,
+               y = HealthyEatingScore, 
+               color = Individual)) + 
+  geom_point() + 
+  theme_pubr() +
+  geom_smooth(method = "lm", se = FALSE, color = "black", linetype = "dashed")+
+  labs(x = "Intensity of Reminders",
+       y = "Healthy Eating Score")+
+  theme(text         = element_text(size = 13, family="Garamond"),
+        axis.title.x = element_text(size = 13, family="Garamond"),
+        axis.title.y = element_text(size = 13, family= "Garamond"))
+```
+
+## OLS model
+
+We begin with a simple Ordinary Least Squares (OLS) regression, where we estimate the relationship between Intensity of Reminders and Healthy Eating Score, ignoring individual differences. This model assumes that all individuals share the same intercept and slope — that is, it pools all observations together without accounting for the fact that each individual may have a different baseline level of healthy eating. While easy to estimate and interpret, this approach risks omitted variable bias if there are time-invariant individual characteristics (like personal motivation or lifestyle) that influence both the reminders and the outcome.
+
+```{r}
+model1 <- lm(HealthyEatingScore~IntensityOfReminders, data=Demo)
+summary(model1)
+```
+
+$y = 0.185X+3.882$. This indicates that for each one-unit increase in reminder intensity, the Healthy Eating Score increases by 0.19 points. However, the p-value for this effect is 0.543, which indicates that the relationship is not statistically significant at conventional levels.
+
+## OLS model with 'individual' as control
+
+```{r}
+model2 <- lm(HealthyEatingScore ~ IntensityOfReminders + Individual, data = Demo)
+summary(model2)
+```
+
+In the output, there's a coefficient for each group, and 'Me' is treated as the baseline. The slope for Intensity of Reminders is now estimated at 0.74, meaning that for a one-unit increase in reminder intensity, the Healthy Eating Score increases by 0.74 points on average. The p-value is now 0.052. The intercept (0.76) represents the expected Healthy Eating Score for the reference individual ('Me') when Intensity of Reminders is 0. 'You' tends to score 3.33 points higher than Me (significant). 'Liqing' scores 2.29 points lower, but this is not statistically significant.
+
+We can also visualize the results of this model to reinforce the logic. The plot below shows that each individual has their own intercept, while sharing the same slope for 'Intensity of Reminders'. This aligns with the fixed effects idea: we allow each person to start from a different baseline, but we assume the effect of reminders is consistent across individuals.
+
+```{r}
+# Add predicted values for each observation
+Demo <- Demo %>%
+  mutate(Fitted = predict(model2))
+
+# Plot: Individual lines with shared slope, different intercepts
+ggplot(Demo, aes(x = IntensityOfReminders, y = HealthyEatingScore, color = Individual)) +
+  geom_point(size = 2) +
+  geom_line(aes(y = Fitted), size = 1) +
+  labs(title = "Fixed Effects Logic: Common Slope, Varying Intercepts",
+       x = "Intensity of Reminders",
+       y = "Healthy Eating Score") +
+  theme_minimal(base_family = "Garamond") +
+  theme(text = element_text(size = 13))
+```
+
+## De-meaned model
+
+Another way to estimate a fixed effects model is by manually demeaning the data — that is, subtracting each individual's mean from their own observations. This removes all between-individual variation, leaving only the within-individual variation over time. When we run a regression on the demeaned variables, we get the same slope as a fixed effects model, since we've effectively controlled for all time-invariant individual characteristics.
+
+This approach is useful for illustrating the logic of fixed effects and helps students see exactly what is being removed from the data.
+
+```{r}
+Demo_demeaned <- Demo %>%
+  group_by(Individual) %>%
+  mutate(
+    Y_demeaned = HealthyEatingScore - mean(HealthyEatingScore),
+    X_demeaned = IntensityOfReminders - mean(IntensityOfReminders)
+  ) %>%
+  ungroup()
+
+# Run the model
+model3 <- lm(Y_demeaned ~ X_demeaned, data = Demo_demeaned)
+summary(model3)
+```
+
+Same as model2, the slope for Intensity of Reminders is still 0.74, meaning that for a one-unit increase in reminder intensity, the Healthy Eating Score increases by 0.74 points on average. This confirms that demeaning preserves the within-unit effect. The p-value is now 0.041, indicating a statistically significant positive relationship at the 5% level. 
+
+The intercept is essentially zero and not significant — this is expected. Since we’ve demeaned both the outcome and the predictor, the mean of each is zero by construction. That’s why the intercept is near zero and meaningless in this context.
+
+## Fixed effects 
+
+The most efficient and flexible way to estimate a fixed effects model in R is by using the `fixest` package. This package allows us to easily specify fixed effects using the `|` operator, without manually creating dummy variables or demeaning the data. Here, we include Individual as a fixed effect to account for time-invariant differences across individuals, while estimating a common slope for 'IntensityOfReminders'.
+
+This approach is mathematically equivalent to both the OLS with individual dummies and the demeaned model. However, fixest handles fixed effects more efficiently and also supports clustered standard errors, multi-way fixed effects, and IV estimation — making it a preferred choice for applied panel data analysis.
+
+```{r}
+model4 <- feols(HealthyEatingScore ~ IntensityOfReminders | Individual, data = Demo)
+summary(model4)
+```
+
+The output indicates that we have 32 observations within 4 groups. The standard error is clustered, which is the default of `feols` function. 
+
+**Clustered standard errors** adjust for the fact that observations within the same group (or "cluster") — such as individuals in panel data — may not be independent of one another. In panel data, for example, repeated measurements from the same person are likely correlated. If we ignore this and treat all observations as independent, our standard errors may be too small, leading to overstated statistical significance. Clustered standard errors correct for this by allowing for arbitrary correlation of errors within each cluster, making our inference (like p-values and confidence intervals) more reliable.
+
+We can get heteroskedasticity-robust standard errors using this function:
+
+```{r}
+summary(model4, vcov = "hetero")  
+```
+
+We see that for the model with clustered standard error, the p-value is 0.22, meaning that the effect is not statistically significant at conventional levels in this specification. But for the model with heteroskedasticity-robust standard errors, the p-value is 0.07, which supports what we said earlier: If we ignore this and treat all observations as independent, our standard errors may be too small, leading to overstated statistical significance. 
+
+You may also notice there is no 'intercept' in the model output of the fixed effects model. This is because fixed effects absorb the intercepts by estimating a separate intercept for each individual. Instead of reporting a single overall intercept, the model includes individual-specific fixed effects that capture each person’s baseline level of the outcome.
+
+You can view these estimated individual intercepts using the `fixef()` function:
+
+```{r}
+fixef(model4)
+```
+
+## Comparing four models
+
+```{r}
+stargazer(model1, model2, model3, 
+          type = "text",
+          title = "Comparison of OLS, Individual Controls, Demeaned, and Fixed Effects Models",
+          column.labels = c("OLS", "OLS + Individual", "Demeaned", "Fixed Effects"),
+          dep.var.labels = "Healthy Eating Score")
+          
+```
+
+The logic is the same across model2, model3 and model4, and they all give you the same slope — but small differences in how the model handles variation and estimates standard errors can lead to slightly different p-values. In practice, we usually rely on packages like `fixest` for efficiency and robust SEs.

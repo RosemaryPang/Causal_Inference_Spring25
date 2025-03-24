@@ -16,4 +16,6 @@ This tutorial website contains the R code and output of weekly tutorials.
 
 [Week 4 Mediation Analysis](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial4.html)
 
-[Week 5 Instrumental variable](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial5.html)
+[Week 5 Instrumental Variable](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial5.html)
+
+[Week 6 Panel Data Analysis](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial6.html)
