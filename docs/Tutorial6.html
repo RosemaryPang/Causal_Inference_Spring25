@@ -204,7 +204,17 @@ window.Quarto = {
   <li><a href="#ols-model-with-individual-as-control" id="toc-ols-model-with-individual-as-control" class="nav-link" data-scroll-target="#ols-model-with-individual-as-control">OLS model with ‘individual’ as control</a></li>
   <li><a href="#de-meaned-model" id="toc-de-meaned-model" class="nav-link" data-scroll-target="#de-meaned-model">De-meaned model</a></li>
   <li><a href="#fixed-effects" id="toc-fixed-effects" class="nav-link" data-scroll-target="#fixed-effects">Fixed effects</a></li>
+  <li><a href="#clustered-standard-errors" id="toc-clustered-standard-errors" class="nav-link" data-scroll-target="#clustered-standard-errors">Clustered standard errors</a></li>
   <li><a href="#comparing-four-models" id="toc-comparing-four-models" class="nav-link" data-scroll-target="#comparing-four-models">Comparing four models</a></li>
+  </ul></li>
+  <li><a href="#two-way-fixed-effect" id="toc-two-way-fixed-effect" class="nav-link" data-scroll-target="#two-way-fixed-effect">Two-way Fixed Effect</a>
+  <ul class="collapse">
+  <li><a href="#practice-twfe" id="toc-practice-twfe" class="nav-link" data-scroll-target="#practice-twfe">Practice TWFE</a></li>
+  <li><a href="#clustered-standard-error" id="toc-clustered-standard-error" class="nav-link" data-scroll-target="#clustered-standard-error">Clustered standard error</a></li>
+  </ul></li>
+  <li><a href="#random-effect" id="toc-random-effect" class="nav-link" data-scroll-target="#random-effect">Random Effect</a>
+  <ul class="collapse">
+  <li><a href="#hausman-test-should-we-trust-random-effects" id="toc-hausman-test-should-we-trust-random-effects" class="nav-link" data-scroll-target="#hausman-test-should-we-trust-random-effects">Hausman Test: Should We Trust Random Effects?</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -586,6 +596,9 @@ RMSE: 2.71763     Adj. R2: 0.185071
 </div>
 </div>
 <p>The output indicates that we have 32 observations within 4 groups. The standard error is clustered, which is the default of <code>feols</code> function.</p>
+</section>
+<section id="clustered-standard-errors" class="level2">
+<h2 class="anchored" data-anchor-id="clustered-standard-errors">Clustered standard errors</h2>
 <p><strong>Clustered standard errors</strong> adjust for the fact that observations within the same group (or “cluster”) — such as individuals in panel data — may not be independent of one another. In panel data, for example, repeated measurements from the same person are likely correlated. If we ignore this and treat all observations as independent, our standard errors may be too small, leading to overstated statistical significance. Clustered standard errors correct for this by allowing for arbitrary correlation of errors within each cluster, making our inference (like p-values and confidence intervals) more reliable.</p>
 <p>We can get heteroskedasticity-robust standard errors using this function:</p>
 <div class="cell">
@@ -667,6 +680,238 @@ Note:                                                 *p&lt;0.1; **p&lt;0.05; **
 </div>
 </div>
 <p>The logic is the same across model2, model3 and model4, and they all give you the same slope — but small differences in how the model handles variation and estimates standard errors can lead to slightly different p-values. In practice, we usually rely on packages like <code>fixest</code> for efficiency and robust SEs.</p>
+</section>
+</section>
+<section id="two-way-fixed-effect" class="level1">
+<h1>Two-way Fixed Effect</h1>
+<p>In the previous sections, we used fixed effects to control for unobserved, time-invariant differences between individuals — such as personality, baseline health, or preferences. However, in many panel data settings, there may also be time-specific shocks that affect all individuals in the same period, such as policy changes, economic shifts, or public health campaigns. Two-way fixed effects (TWFE) models address this by adding both individual and time fixed effects, allowing us to control for who someone is and when the observation occurred. This helps isolate the effect of a treatment or variable of interest by removing bias from both stable individual characteristics and shared time shocks.</p>
+<p>For demonstration purposes, we add a simple fake time variable to our dataset, assuming each individual is observed across eight time periods. This allows us to simulate a panel structure with both individual and time dimensions. We then estimate two models: a standard fixed effects model with only individual fixed effects (model_fe), and a two-way fixed effects model that includes both individual and time fixed effects (model_twfe). The two-way model controls not only for each person’s baseline behavior but also for any year-specific effects that may influence the outcome. This is particularly useful when we suspect that external events — such as national trends or policy shifts — may impact all individuals during the same period.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add fake time variable for demo</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2000</span>)</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>Demo<span class="sc">$</span>Time <span class="ot">&lt;-</span> <span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">8</span>, <span class="at">times =</span> <span class="dv">4</span>)  <span class="co"># assuming 8 time points</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Fit both models</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>model_fe   <span class="ot">&lt;-</span> <span class="fu">feols</span>(HealthyEatingScore <span class="sc">~</span> IntensityOfReminders <span class="sc">|</span> Individual, <span class="at">data =</span> Demo)</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>model_twfe <span class="ot">&lt;-</span> <span class="fu">feols</span>(HealthyEatingScore <span class="sc">~</span> IntensityOfReminders <span class="sc">|</span> Individual <span class="sc">+</span> Time, <span class="at">data =</span> Demo)</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_fe)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS estimation, Dep. Var.: HealthyEatingScore
+Observations: 32
+Fixed-effects: Individual: 4
+Standard-errors: Clustered (Individual) 
+                     Estimate Std. Error t value Pr(&gt;|t|) 
+IntensityOfReminders 0.744796    0.47583 1.56526  0.21549 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 2.71763     Adj. R2: 0.185071
+                Within R2: 0.131979</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_twfe)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS estimation, Dep. Var.: HealthyEatingScore
+Observations: 32
+Fixed-effects: Individual: 4,  Time: 8
+Standard-errors: Clustered (Individual) 
+                     Estimate Std. Error t value Pr(&gt;|t|)    
+IntensityOfReminders 0.907467   0.378913 2.39492 0.096313 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 2.37174     Adj. R2: 0.162072
+                Within R2: 0.1712  </code></pre>
+</div>
+</div>
+<p>In the two-way fixed effects (TWFE) model, the estimated effect of ‘IntensityOfReminders’ on ‘HealthyEatingScore’ is 0.91, compared to 0.74 in the standard fixed effects (FE) model. This suggests that, after controlling for both individual characteristics and common time effects, the effect of reminder intensity is stronger than what the one-way FE model estimated.</p>
+<p>The p-value for the TWFE model is 0.096, indicating the effect is marginally significant at the 10% level, while the FE model’s p-value was higher (0.215), suggesting non-significance. This shift implies that time fixed effects may have reduced noise or bias in the original model — potentially caused by unobserved events affecting all individuals in a given time period.</p>
+<p>Additionally, the RMSE (root mean squared error) decreased from 2.72 (FE) to 2.37 (TWFE), indicating a better model fit with the inclusion of time fixed effects.</p>
+<section id="practice-twfe" class="level2">
+<h2 class="anchored" data-anchor-id="practice-twfe">Practice TWFE</h2>
+<p>Now, let’s have a practice using real cross-country time series data: the gapminder dataset. This dataset includes information on life expectancy, GDP per capita, and population size for countries around the world from 1952 to 2007, in five-year increments. It provides a simple but effective example of panel data where each country is observed repeatedly over time. We’ll use this dataset to estimate a two-way fixed effects model, controlling for both country-specific characteristics (like geography, health infrastructure, or culture) and time-specific shocks (like global medical advances or economic downturns).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(gapminder)</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Rename for consistency</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> gapminder <span class="sc">%&gt;%</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">country =</span> country, <span class="at">year =</span> year,</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">life_exp =</span> lifeExp,</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">gdp_pc =</span> gdpPercap) <span class="sc">%&gt;%</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">log_pop =</span> <span class="fu">log</span>(pop))</span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 7
+  country     continent  year life_exp      pop gdp_pc log_pop
+  &lt;fct&gt;       &lt;fct&gt;     &lt;int&gt;    &lt;dbl&gt;    &lt;int&gt;  &lt;dbl&gt;   &lt;dbl&gt;
+1 Afghanistan Asia       1952     28.8  8425333   779.    15.9
+2 Afghanistan Asia       1957     30.3  9240934   821.    16.0
+3 Afghanistan Asia       1962     32.0 10267083   853.    16.1
+4 Afghanistan Asia       1967     34.0 11537966   836.    16.3
+5 Afghanistan Asia       1972     36.1 13079460   740.    16.4
+6 Afghanistan Asia       1977     38.4 14880372   786.    16.5</code></pre>
+</div>
+</div>
+<p>Our outcome of interest will be life expectancy, and we’ll examine how it is associated with GDP per capita, while controlling for population size.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>model_gap_FE <span class="ot">&lt;-</span> <span class="fu">feols</span>(life_exp <span class="sc">~</span> <span class="fu">log</span>(gdp_pc) <span class="sc">+</span> log_pop <span class="sc">|</span> country, <span class="at">data =</span> df)</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>model_gap_TWFE <span class="ot">&lt;-</span> <span class="fu">feols</span>(life_exp <span class="sc">~</span> <span class="fu">log</span>(gdp_pc) <span class="sc">+</span> log_pop <span class="sc">|</span> country <span class="sc">+</span> year, <span class="at">data =</span> df)</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_gap_FE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS estimation, Dep. Var.: life_exp
+Observations: 1,704
+Fixed-effects: country: 142
+Standard-errors: Clustered (country) 
+            Estimate Std. Error  t value   Pr(&gt;|t|)    
+log(gdp_pc)  4.47740   0.555508  8.06001 2.9408e-13 ***
+log_pop     11.95839   0.664803 17.98789  &lt; 2.2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 3.09349     Adj. R2: 0.937351
+                Within R2: 0.779557</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_gap_TWFE)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS estimation, Dep. Var.: life_exp
+Observations: 1,704
+Fixed-effects: country: 142,  year: 12
+Standard-errors: Clustered (country) 
+            Estimate Std. Error t value   Pr(&gt;|t|)    
+log(gdp_pc)  2.98160   0.765053 3.89725 1.4984e-04 ***
+log_pop      8.32135   1.050069 7.92458 6.2636e-13 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 2.96801     Adj. R2: 0.941921
+                Within R2: 0.189886</code></pre>
+</div>
+</div>
+<p>Let’s compare the results from the one-way fixed effects model (country only) and the two-way fixed effects model (country and year).</p>
+<p>In the one-way fixed effects model, the estimated effect of <em>log(gdp_pc)</em> on <em>life expectancy</em> is 4.48, while in the two-way fixed effects model, the estimate drops to 2.98. Similarly, the effect of <em>log_pop</em> decreases from 11.96 to 8.32. These differences suggest that once we control for year-specific shocks – such as global medical advances, international development programs, or major world events – the explanatory power of GDP and population size becomes more conservative. That is, GDP still has a positive association with life expectancy, but the effect is smaller once we account for trends that influence all countries in a given year.</p>
+<p>We also see changes in model fit statistics. The RMSE (Root Mean Squared Error), which tells us the average prediction error in the units of life expectancy, drops slightly from 3.09 to 2.97, indicating that the two-way fixed effects model makes slightly more accurate predictions overall. However, the within R² decreases dramatically from 0.78 to 0.19. This may seem surprising, but it’s expected. When we include year fixed effects, we absorb more variation from the outcome variable (life expectancy), leaving less variation for GDP and population to explain. That doesn’t mean the model is worse – it just means that more confounding variation has been removed.</p>
+</section>
+<section id="clustered-standard-error" class="level2">
+<h2 class="anchored" data-anchor-id="clustered-standard-error">Clustered standard error</h2>
+<p>By default, when we fit a fixed effects model using <code>feols()</code> with multiple fixed effects (e.g., country + year), the standard errors are clustered by the first fixed effect – in this case, country. This makes sense, as we usually want to account for serial correlation within each unit over time.</p>
+<p>If you want to change the clustering variable, you can explicitly specify it using the cluster argument directly in the model:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>model_twfe_clustered <span class="ot">&lt;-</span> <span class="fu">feols</span>(life_exp <span class="sc">~</span> <span class="fu">log</span>(gdp_pc) <span class="sc">+</span> log_pop <span class="sc">|</span> country <span class="sc">+</span> year, </span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>                              <span class="at">cluster =</span> <span class="sc">~</span>year,</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>                              <span class="at">data =</span> df)</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(model_twfe_clustered)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS estimation, Dep. Var.: life_exp
+Observations: 1,704
+Fixed-effects: country: 142,  year: 12
+Standard-errors: Clustered (year) 
+            Estimate Std. Error t value   Pr(&gt;|t|)    
+log(gdp_pc)  2.98160   0.117151 25.4509 3.9736e-11 ***
+log_pop      8.32135   0.609468 13.6535 3.0544e-08 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 2.96801     Adj. R2: 0.941921
+                Within R2: 0.189886</code></pre>
+</div>
+</div>
+<p>In the example above, we clustered standard errors by year, which allows for arbitrary correlation of errors across countries within the same year. This is useful for demonstration purposes to show how clustering affects inference. However, in practice, especially when working with panel data, it is more common to cluster by the unit of observation – in this case, country – because observations within the same country over time are likely to be correlated. Clustering by country accounts for serial correlation in the residuals and typically produces more conservative standard errors, which helps ensure valid statistical inference.</p>
+</section>
+</section>
+<section id="random-effect" class="level1">
+<h1>Random Effect</h1>
+<p>The random effects model is an alternative to fixed effects for analyzing panel data. While fixed effects estimate a separate intercept for each unit (e.g., each country), random effects assume that these unit-specific differences are random deviations from a shared average intercept, drawn from a common distribution. This assumption allows random effects models to use both within-unit and between-unit variation, which often makes them more efficient. However, this efficiency comes at a cost: it assumes that the unit-level effects are not correlated with the explanatory variables. If that assumption is violated, the random effects model may produce biased estimates. We’ll demonstrate this using the <code>gapminder</code> data, then test the assumptions using the Hausman test.</p>
+<p>We’ll use the <code>plm</code> package to estimate both fixed and random effects models for life expectancy using GDP per capita and population as predictors.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare data as panel</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>pdata <span class="ot">&lt;-</span> <span class="fu">pdata.frame</span>(gapminder, <span class="at">index =</span> <span class="fu">c</span>(<span class="st">"country"</span>, <span class="st">"year"</span>))</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Fixed effects (country + year)</span></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>fe_model <span class="ot">&lt;-</span> <span class="fu">plm</span>(lifeExp <span class="sc">~</span> <span class="fu">log</span>(gdpPercap) <span class="sc">+</span> <span class="fu">log</span>(pop), <span class="at">data =</span> pdata, <span class="at">model =</span> <span class="st">"within"</span>, <span class="at">effect =</span> <span class="st">"twoways"</span>)</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Random effects</span></span>
+<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>re_model <span class="ot">&lt;-</span> <span class="fu">plm</span>(lifeExp <span class="sc">~</span> <span class="fu">log</span>(gdpPercap) <span class="sc">+</span> <span class="fu">log</span>(pop), <span class="at">data =</span> pdata, <span class="at">model =</span> <span class="st">"random"</span>)</span>
+<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Compare results</span></span>
+<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fe_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Twoways effects Within Model
+
+Call:
+plm(formula = lifeExp ~ log(gdpPercap) + log(pop), data = pdata, 
+    effect = "twoways", model = "within")
+
+Balanced Panel: n = 142, T = 12, N = 1704
+
+Residuals:
+      Min.    1st Qu.     Median    3rd Qu.       Max. 
+-23.592495  -1.336179   0.053776   1.688032   8.811396 
+
+Coefficients:
+               Estimate Std. Error t-value  Pr(&gt;|t|)    
+log(gdpPercap)  2.98160    0.25747  11.580 &lt; 2.2e-16 ***
+log(pop)        8.32135    0.45980  18.098 &lt; 2.2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Total Sum of Squares:    18529
+Residual Sum of Squares: 15011
+R-Squared:      0.18989
+Adj. R-Squared: 0.10934
+F-statistic: 181.538 on 2 and 1549 DF, p-value: &lt; 2.22e-16</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(re_model)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Oneway (individual) effect Random Effect Model 
+   (Swamy-Arora's transformation)
+
+Call:
+plm(formula = lifeExp ~ log(gdpPercap) + log(pop), data = pdata, 
+    model = "random")
+
+Balanced Panel: n = 142, T = 12, N = 1704
+
+Effects:
+                 var std.dev share
+idiosyncratic 10.453   3.233 0.256
+individual    30.392   5.513 0.744
+theta: 0.8331
+
+Residuals:
+      Min.    1st Qu.     Median    3rd Qu.       Max. 
+-22.337727  -2.386962   0.040912   2.663395  12.373829 
+
+Coefficients:
+                 Estimate Std. Error z-value  Pr(&gt;|z|)    
+(Intercept)    -115.17778    3.35470 -34.333 &lt; 2.2e-16 ***
+log(gdpPercap)    6.71888    0.21960  30.596 &lt; 2.2e-16 ***
+log(pop)          7.60075    0.22363  33.987 &lt; 2.2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Total Sum of Squares:    79829
+Residual Sum of Squares: 26968
+R-Squared:      0.66217
+Adj. R-Squared: 0.66178
+Chisq: 3334.13 on 2 DF, p-value: &lt; 2.22e-16</code></pre>
+</div>
+</div>
+<p>From the random effect output, we see that, 74% of the total error variance is due to differences between countries, and 26% is due to variation within countries over time. Unlike the fixed effects model, the random effects model includes an additional line in the output for the intercept: -115.18. This is the grand mean intercept, representing the average baseline level of the outcome across all units before adding unit-specific random deviations. In contrast, fixed effects models don’t estimate a common intercept because each unit has its own.</p>
+<section id="hausman-test-should-we-trust-random-effects" class="level2">
+<h2 class="anchored" data-anchor-id="hausman-test-should-we-trust-random-effects">Hausman Test: Should We Trust Random Effects?</h2>
+<p>The Hausman test allows us to formally test whether the random effects model is appropriate. The null hypothesis is that the random effects model is consistent — in other words, that there is no correlation between the unit effects and the regressors. If the test rejects the null, we should use fixed effects.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Hausman test</span></span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>hausman_result <span class="ot">&lt;-</span> <span class="fu">phtest</span>(fe_model, re_model)</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>hausman_result</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Hausman Test
+
+data:  lifeExp ~ log(gdpPercap) + log(pop)
+chisq = 7075.6, df = 2, p-value &lt; 2.2e-16
+alternative hypothesis: one model is inconsistent</code></pre>
+</div>
+</div>
+<p>p-value is smaller than 0.05, so we reject the null , and should use fixed effects (random effects are likely biased). This test helps you decide between fixed and random effects not based on fit alone, but based on the core assumption about unobserved heterogeneity in your panel data.</p>
 
 
 </section>

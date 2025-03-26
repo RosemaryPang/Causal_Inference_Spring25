@@ -7,17 +7,17 @@ Panel data analysis is a powerful tool in causal inference, enabling researchers
 
 By the end of this tutorial, you will be familiar with:
 
-1 .\ The structure of panel data 
+1 . The structure of panel data
 
-2 .\ Estimating fixed and random effects models
+2 . Estimating fixed and random effects models
 
-3 .\ Models with nonlinear outcomes
+3 . Models with nonlinear outcomes
 
-4 .\ Incorporating mediation and instrumental variable approaches in panel data
+4 . Incorporating mediation and instrumental variable approaches in panel data
 
 # Front-end Matters
 
-We use `fixest` package for fixed effect model. For random effect, we also use the `plm` package. For mediation analysis and instrumental variable in panel data, we'll use a combination of `fixest` and the packages we introduced earlier: `mediation` and `AER`. 
+We use `fixest` package for fixed effect model. For random effect, we also use the `plm` package. For mediation analysis and instrumental variable in panel data, we'll use a combination of `fixest` and the packages we introduced earlier: `mediation` and `AER`.
 
 The `fixest` package is a powerful and efficient tool for estimating fixed effects models in R. It supports multi-way fixed effects (e.g., individual and time), clustered standard errors, and instrumental variable estimation — all with a clean and flexible syntax. It’s well-suited for large datasets and is increasingly popular in applied causal inference research.
 
@@ -48,7 +48,7 @@ tidydata <- table1
 tidydata
 ```
 
-But sometimes, when we receive data, it doesn’t come in the long format required for panel data analysis. Instead, it may be in a wide format, where repeated measurements for each unit (e.g., different years) appear as separate columns. 
+But sometimes, when we receive data, it doesn’t come in the long format required for panel data analysis. Instead, it may be in a wide format, where repeated measurements for each unit (e.g., different years) appear as separate columns.
 
 ```{r}
 untidydata <- table4a
@@ -65,7 +65,7 @@ longer <- untidydata |>
 longer
 ```
 
-# Fixed Effect 
+# Fixed Effect
 
 ## Textbook Example data
 
@@ -86,6 +86,7 @@ Demo <- tibble(Individual = factor(c(rep('You',8),rep('Me',8),
 
 head(Demo)
 ```
+
 Visualization:
 
 ```{r}
@@ -160,11 +161,11 @@ model3 <- lm(Y_demeaned ~ X_demeaned, data = Demo_demeaned)
 summary(model3)
 ```
 
-Same as model2, the slope for Intensity of Reminders is still 0.74, meaning that for a one-unit increase in reminder intensity, the Healthy Eating Score increases by 0.74 points on average. This confirms that demeaning preserves the within-unit effect. The p-value is now 0.041, indicating a statistically significant positive relationship at the 5% level. 
+Same as model2, the slope for Intensity of Reminders is still 0.74, meaning that for a one-unit increase in reminder intensity, the Healthy Eating Score increases by 0.74 points on average. This confirms that demeaning preserves the within-unit effect. The p-value is now 0.041, indicating a statistically significant positive relationship at the 5% level.
 
 The intercept is essentially zero and not significant — this is expected. Since we’ve demeaned both the outcome and the predictor, the mean of each is zero by construction. That’s why the intercept is near zero and meaningless in this context.
 
-## Fixed effects 
+## Fixed effects
 
 The most efficient and flexible way to estimate a fixed effects model in R is by using the `fixest` package. This package allows us to easily specify fixed effects using the `|` operator, without manually creating dummy variables or demeaning the data. Here, we include Individual as a fixed effect to account for time-invariant differences across individuals, while estimating a common slope for 'IntensityOfReminders'.
 
@@ -175,7 +176,9 @@ model4 <- feols(HealthyEatingScore ~ IntensityOfReminders | Individual, data = D
 summary(model4)
 ```
 
-The output indicates that we have 32 observations within 4 groups. The standard error is clustered, which is the default of `feols` function. 
+The output indicates that we have 32 observations within 4 groups. The standard error is clustered, which is the default of `feols` function.
+
+## Clustered standard errors
 
 **Clustered standard errors** adjust for the fact that observations within the same group (or "cluster") — such as individuals in panel data — may not be independent of one another. In panel data, for example, repeated measurements from the same person are likely correlated. If we ignore this and treat all observations as independent, our standard errors may be too small, leading to overstated statistical significance. Clustered standard errors correct for this by allowing for arbitrary correlation of errors within each cluster, making our inference (like p-values and confidence intervals) more reliable.
 
@@ -185,7 +188,7 @@ We can get heteroskedasticity-robust standard errors using this function:
 summary(model4, vcov = "hetero")  
 ```
 
-We see that for the model with clustered standard error, the p-value is 0.22, meaning that the effect is not statistically significant at conventional levels in this specification. But for the model with heteroskedasticity-robust standard errors, the p-value is 0.07, which supports what we said earlier: If we ignore this and treat all observations as independent, our standard errors may be too small, leading to overstated statistical significance. 
+We see that for the model with clustered standard error, the p-value is 0.22, meaning that the effect is not statistically significant at conventional levels in this specification. But for the model with heteroskedasticity-robust standard errors, the p-value is 0.07, which supports what we said earlier: If we ignore this and treat all observations as independent, our standard errors may be too small, leading to overstated statistical significance.
 
 You may also notice there is no 'intercept' in the model output of the fixed effects model. This is because fixed effects absorb the intercepts by estimating a separate intercept for each individual. Instead of reporting a single overall intercept, the model includes individual-specific fixed effects that capture each person’s baseline level of the outcome.
 
@@ -207,3 +210,113 @@ stargazer(model1, model2, model3,
 ```
 
 The logic is the same across model2, model3 and model4, and they all give you the same slope — but small differences in how the model handles variation and estimates standard errors can lead to slightly different p-values. In practice, we usually rely on packages like `fixest` for efficiency and robust SEs.
+
+# Two-way Fixed Effect
+
+In the previous sections, we used fixed effects to control for unobserved, time-invariant differences between individuals — such as personality, baseline health, or preferences. However, in many panel data settings, there may also be time-specific shocks that affect all individuals in the same period, such as policy changes, economic shifts, or public health campaigns. Two-way fixed effects (TWFE) models address this by adding both individual and time fixed effects, allowing us to control for who someone is and when the observation occurred. This helps isolate the effect of a treatment or variable of interest by removing bias from both stable individual characteristics and shared time shocks.
+
+For demonstration purposes, we add a simple fake time variable to our dataset, assuming each individual is observed across eight time periods. This allows us to simulate a panel structure with both individual and time dimensions. We then estimate two models: a standard fixed effects model with only individual fixed effects (model_fe), and a two-way fixed effects model that includes both individual and time fixed effects (model_twfe). The two-way model controls not only for each person's baseline behavior but also for any year-specific effects that may influence the outcome. This is particularly useful when we suspect that external events — such as national trends or policy shifts — may impact all individuals during the same period.
+
+```{r}
+# Add fake time variable for demo
+set.seed(2000)
+Demo$Time <- rep(1:8, times = 4)  # assuming 8 time points
+
+# Fit both models
+model_fe   <- feols(HealthyEatingScore ~ IntensityOfReminders | Individual, data = Demo)
+model_twfe <- feols(HealthyEatingScore ~ IntensityOfReminders | Individual + Time, data = Demo)
+
+summary(model_fe)
+summary(model_twfe)
+```
+
+In the two-way fixed effects (TWFE) model, the estimated effect of 'IntensityOfReminders' on 'HealthyEatingScore' is 0.91, compared to 0.74 in the standard fixed effects (FE) model. This suggests that, after controlling for both individual characteristics and common time effects, the effect of reminder intensity is stronger than what the one-way FE model estimated.
+
+The p-value for the TWFE model is 0.096, indicating the effect is marginally significant at the 10% level, while the FE model’s p-value was higher (0.215), suggesting non-significance. This shift implies that time fixed effects may have reduced noise or bias in the original model — potentially caused by unobserved events affecting all individuals in a given time period.
+
+Additionally, the RMSE (root mean squared error) decreased from 2.72 (FE) to 2.37 (TWFE), indicating a better model fit with the inclusion of time fixed effects.
+
+## Practice TWFE
+
+Now, let's have a practice using real cross-country time series data: the gapminder dataset. This dataset includes information on life expectancy, GDP per capita, and population size for countries around the world from 1952 to 2007, in five-year increments. It provides a simple but effective example of panel data where each country is observed repeatedly over time. We’ll use this dataset to estimate a two-way fixed effects model, controlling for both country-specific characteristics (like geography, health infrastructure, or culture) and time-specific shocks (like global medical advances or economic downturns).
+
+```{r}
+library(gapminder)
+
+# Rename for consistency
+df <- gapminder %>%
+  rename(country = country, year = year,
+         life_exp = lifeExp,
+         gdp_pc = gdpPercap) %>%
+  mutate(log_pop = log(pop))
+
+head(df)
+```
+
+Our outcome of interest will be life expectancy, and we’ll examine how it is associated with GDP per capita, while controlling for population size.
+
+```{r}
+model_gap_FE <- feols(life_exp ~ log(gdp_pc) + log_pop | country, data = df)
+model_gap_TWFE <- feols(life_exp ~ log(gdp_pc) + log_pop | country + year, data = df)
+
+
+summary(model_gap_FE)
+summary(model_gap_TWFE)
+```
+
+Let’s compare the results from the one-way fixed effects model (country only) and the two-way fixed effects model (country and year).
+
+In the one-way fixed effects model, the estimated effect of *log(gdp_pc)* on *life expectancy* is 4.48, while in the two-way fixed effects model, the estimate drops to 2.98. Similarly, the effect of *log_pop* decreases from 11.96 to 8.32. These differences suggest that once we control for year-specific shocks -- such as global medical advances, international development programs, or major world events -- the explanatory power of GDP and population size becomes more conservative. That is, GDP still has a positive association with life expectancy, but the effect is smaller once we account for trends that influence all countries in a given year.
+
+We also see changes in model fit statistics. The RMSE (Root Mean Squared Error), which tells us the average prediction error in the units of life expectancy, drops slightly from 3.09 to 2.97, indicating that the two-way fixed effects model makes slightly more accurate predictions overall. However, the within R² decreases dramatically from 0.78 to 0.19. This may seem surprising, but it’s expected. When we include year fixed effects, we absorb more variation from the outcome variable (life expectancy), leaving less variation for GDP and population to explain. That doesn’t mean the model is worse -- it just means that more confounding variation has been removed.
+
+## Clustered standard error
+
+By default, when we fit a fixed effects model using `feols()` with multiple fixed effects (e.g., country + year), the standard errors are clustered by the first fixed effect -- in this case, country. This makes sense, as we usually want to account for serial correlation within each unit over time.
+
+If you want to change the clustering variable, you can explicitly specify it using the cluster argument directly in the model:
+
+```{r}
+model_twfe_clustered <- feols(life_exp ~ log(gdp_pc) + log_pop | country + year, 
+                              cluster = ~year,
+                              data = df)
+summary(model_twfe_clustered)
+```
+
+In the example above, we clustered standard errors by year, which allows for arbitrary correlation of errors across countries within the same year. This is useful for demonstration purposes to show how clustering affects inference. However, in practice, especially when working with panel data, it is more common to cluster by the unit of observation -- in this case, country -- because observations within the same country over time are likely to be correlated. Clustering by country accounts for serial correlation in the residuals and typically produces more conservative standard errors, which helps ensure valid statistical inference.
+
+# Random Effect
+
+The random effects model is an alternative to fixed effects for analyzing panel data. While fixed effects estimate a separate intercept for each unit (e.g., each country), random effects assume that these unit-specific differences are random deviations from a shared average intercept, drawn from a common distribution. This assumption allows random effects models to use both within-unit and between-unit variation, which often makes them more efficient. However, this efficiency comes at a cost: it assumes that the unit-level effects are not correlated with the explanatory variables. If that assumption is violated, the random effects model may produce biased estimates. We'll demonstrate this using the `gapminder` data, then test the assumptions using the Hausman test.
+
+We’ll use the `plm` package to estimate both fixed and random effects models for life expectancy using GDP per capita and population as predictors.
+
+```{r}
+# Prepare data as panel
+pdata <- pdata.frame(gapminder, index = c("country", "year"))
+
+# Fixed effects (country + year)
+fe_model <- plm(lifeExp ~ log(gdpPercap) + log(pop), data = pdata, model = "within", effect = "twoways")
+
+# Random effects
+re_model <- plm(lifeExp ~ log(gdpPercap) + log(pop), data = pdata, model = "random")
+
+# Compare results
+summary(fe_model)
+summary(re_model)
+```
+
+From the random effect output, we see that, 74% of the total error variance is due to differences between countries, and 26% is due to variation within countries over time. Unlike the fixed effects model, the random effects model includes an additional line in the output for the intercept: -115.18. This is the grand mean intercept, representing the average baseline level of the outcome across all units before adding unit-specific random deviations. In contrast, fixed effects models don’t estimate a common intercept because each unit has its own.
+
+## Hausman Test: Should We Trust Random Effects?
+
+The Hausman test allows us to formally test whether the random effects model is appropriate. The null hypothesis is that the random effects model is consistent — in other words, that there is no correlation between the unit effects and the regressors. If the test rejects the null, we should use fixed effects.
+
+```{r}
+# Hausman test
+hausman_result <- phtest(fe_model, re_model)
+hausman_result
+```
+
+p-value is smaller than 0.05, so we reject the null , and should use fixed effects (random effects are likely biased). This test helps you decide between fixed and random effects not based on fit alone, but based on the core assumption about unobserved heterogeneity in your panel data.
+
