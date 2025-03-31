@@ -216,6 +216,9 @@ window.Quarto = {
   <ul class="collapse">
   <li><a href="#hausman-test-should-we-trust-random-effects" id="toc-hausman-test-should-we-trust-random-effects" class="nav-link" data-scroll-target="#hausman-test-should-we-trust-random-effects">Hausman Test: Should We Trust Random Effects?</a></li>
   </ul></li>
+  <li><a href="#nonlinear-dependent-variable" id="toc-nonlinear-dependent-variable" class="nav-link" data-scroll-target="#nonlinear-dependent-variable">Nonlinear Dependent Variable</a></li>
+  <li><a href="#mediation-analysis-in-panel-data" id="toc-mediation-analysis-in-panel-data" class="nav-link" data-scroll-target="#mediation-analysis-in-panel-data">Mediation analysis in panel data</a></li>
+  <li><a href="#instrumental-variable-in-fixed-effect" id="toc-instrumental-variable-in-fixed-effect" class="nav-link" data-scroll-target="#instrumental-variable-in-fixed-effect">Instrumental Variable in Fixed Effect</a></li>
   </ul>
 </nav>
     </div>
@@ -897,7 +900,7 @@ Chisq: 3334.13 on 2 DF, p-value: &lt; 2.22e-16</code></pre>
 <p>From the random effect output, we see that, 74% of the total error variance is due to differences between countries, and 26% is due to variation within countries over time. Unlike the fixed effects model, the random effects model includes an additional line in the output for the intercept: -115.18. This is the grand mean intercept, representing the average baseline level of the outcome across all units before adding unit-specific random deviations. In contrast, fixed effects models don’t estimate a common intercept because each unit has its own.</p>
 <section id="hausman-test-should-we-trust-random-effects" class="level2">
 <h2 class="anchored" data-anchor-id="hausman-test-should-we-trust-random-effects">Hausman Test: Should We Trust Random Effects?</h2>
-<p>The Hausman test allows us to formally test whether the random effects model is appropriate. The null hypothesis is that the random effects model is consistent — in other words, that there is no correlation between the unit effects and the regressors. If the test rejects the null, we should use fixed effects.</p>
+<p>The Hausman test allows us to formally test whether the random effects model is appropriate. The null hypothesis is that the random effects model is consistent – in other words, that there is no correlation between the unit effects and the regressors. If the test rejects the null, we should use fixed effects.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Hausman test</span></span>
 <span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>hausman_result <span class="ot">&lt;-</span> <span class="fu">phtest</span>(fe_model, re_model)</span>
@@ -912,9 +915,1263 @@ alternative hypothesis: one model is inconsistent</code></pre>
 </div>
 </div>
 <p>p-value is smaller than 0.05, so we reject the null , and should use fixed effects (random effects are likely biased). This test helps you decide between fixed and random effects not based on fit alone, but based on the core assumption about unobserved heterogeneity in your panel data.</p>
-
-
 </section>
+</section>
+<section id="nonlinear-dependent-variable" class="level1">
+<h1>Nonlinear Dependent Variable</h1>
+<p>So far, we’ve worked with linear fixed effects models where the outcome variable is continuous. However, in many real-world applications, outcomes are nonlinear — for example, binary decisions (e.g., adopted a policy or not), counts (e.g., number of events), or ordinal scales. In these cases, we often turn to nonlinear models such as logistic regression or Poisson regression. Fortunately, we can still incorporate fixed effects into these models to control for unobserved, time-invariant characteristics.</p>
+<p>In this example, we’ll use the <code>Fatalities</code> dataset from the <code>AER</code> package, which contains U.S. state-level panel data from 1982 to 1988. The dataset includes information on state-level beer taxes, seatbelt laws, traffic fatalities, and minimum legal drinking ages. We’ll use a binary outcome variable indicating whether the state had adopted a legal drinking age of 21 (drink21) and estimate the effect of beer taxes (while controlling the effects of spirits consumption, average miles per drive, and the percent of young drivers) on that policy using a logistic fixed effects model. This will illustrate how fixed effects can be applied in a nonlinear context and what trade-offs come with it.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(Fatalities, <span class="at">package =</span> <span class="st">"AER"</span>)</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(Fatalities<span class="sc">$</span>drinkage)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  18.00   20.00   21.00   20.46   21.00   21.00 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">length</span>(<span class="fu">unique</span>(Fatalities<span class="sc">$</span>state)) <span class="co"># 48 states</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 48</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>Fatalities<span class="sc">$</span>drink21 <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(Fatalities<span class="sc">$</span>drinkage <span class="sc">==</span> <span class="dv">21</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(Fatalities)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  state year spirits unemp   income   emppop  beertax baptist  mormon drinkage
+1    al 1982    1.37  14.4 10544.15 50.69204 1.539379 30.3557 0.32829    19.00
+2    al 1983    1.36  13.7 10732.80 52.14703 1.788991 30.3336 0.34341    19.00
+3    al 1984    1.32  11.1 11108.79 54.16809 1.714286 30.3115 0.35924    19.00
+4    al 1985    1.28   8.9 11332.63 55.27114 1.652542 30.2895 0.37579    19.67
+5    al 1986    1.23   9.8 11661.51 56.51450 1.609907 30.2674 0.39311    21.00
+6    al 1987    1.18   7.8 11944.00 57.50988 1.560000 30.2453 0.41123    21.00
+      dry youngdrivers    miles breath jail service fatal nfatal sfatal
+1 25.0063     0.211572 7233.887     no   no      no   839    146     99
+2 22.9942     0.210768 7836.348     no   no      no   930    154     98
+3 24.0426     0.211484 8262.990     no   no      no   932    165     94
+4 23.6339     0.211140 8726.917     no   no      no   882    146     98
+5 23.4647     0.213400 8952.854     no   no      no  1081    172    119
+6 23.7924     0.215527 9166.302     no   no      no  1110    181    114
+  fatal1517 nfatal1517 fatal1820 nfatal1820 fatal2124 nfatal2124  afatal
+1        53          9        99         34       120         32 309.438
+2        71          8       108         26       124         35 341.834
+3        49          7       103         25       118         34 304.872
+4        66          9       100         23       114         45 276.742
+5        82         10       120         23       119         29 360.716
+6        94         11       127         31       138         30 368.421
+      pop  pop1517  pop1820  pop2124 milestot unempus emppopus         gsp
+1 3942002 208999.6 221553.4 290000.1    28516     9.7     57.8 -0.02212476
+2 3960008 202000.1 219125.5 290000.2    31032     9.6     57.9  0.04655825
+3 3988992 197000.0 216724.1 288000.2    32961     7.5     59.5  0.06279784
+4 4021008 194999.7 214349.0 284000.3    35091     7.2     60.1  0.02748997
+5 4049994 203999.9 212000.0 263000.3    36259     7.0     60.7  0.03214295
+6 4082999 204999.8 208998.5 258999.8    37426     6.2     61.5  0.04897637
+  drink21
+1       0
+2       0
+3       0
+4       0
+5       1
+6       1</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fixed effects logit model</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>fe_logit <span class="ot">&lt;-</span> <span class="fu">feglm</span>(drink21 <span class="sc">~</span> beertax <span class="sc">+</span> spirits <span class="sc">+</span> miles <span class="sc">+</span> youngdrivers <span class="sc">|</span> state,</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">data =</span> Fatalities,</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">family =</span> <span class="fu">binomial</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>NOTE: 25 fixed-effects (175 observations) removed because of only 0 (or only 1) outcomes.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fe_logit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>GLM estimation, family = binomial, Dep. Var.: drink21
+Observations: 161
+Fixed-effects: state: 23
+Standard-errors: Clustered (state) 
+                Estimate Std. Error   z value Pr(&gt;|z|)    
+beertax        137.10232  73.992986  1.852910 0.063895 .  
+spirits       -315.45315 169.535443 -1.860691 0.062788 .  
+miles           -0.00004   0.000158 -0.253563 0.799833    
+youngdrivers -1634.33378 814.170424 -2.007361 0.044711 *  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Log-Likelihood:  -6.72428   Adj. Pseudo R2: 0.697531
+           BIC: 150.6         Squared Cor.: 0.945896</code></pre>
+</div>
+</div>
+<p>The original data has 48 states. However, as the note says, 25 fixed-effects (175 observations) removed because of only 0 (or only 1) outcomes. This leaves only 23 states in the analysis. This happens because the logistic fixed effects model can only use units (e.g., states) where there is variation in the binary outcome. In this case, if a state always had a legal drinking age of 21 (i.e., drink21 = 1 for all years) or never had it (drink21 = 0), the model cannot estimate a likelihood contribution for that unit – so it is dropped from the estimation. This is a known limitation of nonlinear fixed effects models and is especially common in short panels or when the outcome is rare or mostly one-sided.</p>
+<p>From the output, we see that <em>Beer Tax</em> has a positive effect on the odds of having a drinking age of 21 – states with higher beer taxes are more likely to have stricter drinking laws, although the result is marginally significant (p ≈ 0.06).</p>
+<p>Now let’s fit the same model using a linear fixed effects approach and compare the results.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>fe_linear <span class="ot">&lt;-</span> <span class="fu">feols</span>(drink21 <span class="sc">~</span> beertax <span class="sc">+</span> spirits <span class="sc">+</span> miles <span class="sc">+</span> youngdrivers <span class="sc">|</span> state, <span class="at">data =</span> Fatalities)</span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(fe_linear)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>OLS estimation, Dep. Var.: drink21
+Observations: 336
+Fixed-effects: state: 48
+Standard-errors: Clustered (state) 
+                Estimate Std. Error   t value  Pr(&gt;|t|)    
+beertax      -0.05166515   0.479441 -0.107761 0.9146438    
+spirits      -0.93821033   0.282044 -3.326467 0.0017136 ** 
+miles        -0.00000177   0.000030 -0.059705 0.9526434    
+youngdrivers -1.08820528   1.791908 -0.607289 0.5465823    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.275475     Adj. R2: 0.58116 
+                 Within R2: 0.237243</code></pre>
+</div>
+</div>
+<p>When we compare the results of the linear model to the fixed effects logit model, we see that the estimates differ noticeably in both direction and statistical significance. For example, in the linear model, the coefficient for <em>beertax</em> is negative and insignificant, while in the logit model, it was positive and marginally significant. Similarly, <em>spirits consumption</em> was strongly negative and statistically significant in the logit model, but its effect is much smaller and weaker in the linear model. These discrepancies highlight how the choice of model – especially whether it accounts for the binary nature of the outcome – can substantially affect conclusions.</p>
+</section>
+<section id="mediation-analysis-in-panel-data" class="level1">
+<h1>Mediation analysis in panel data</h1>
+<p>Mediation analysis helps us understand how a treatment or predictor variable affects an outcome by introducing a third variable – the mediator – that transmits the effect. While the <code>mediation</code> package in R is commonly used for this purpose, it does not support fixed effects models from packages like <code>plm</code> or <code>fixest</code>, which are essential for panel data.</p>
+<p>To work around this limitation, we introduce two practical solutions: (1) use <code>lm()</code> and manually include unit fixed effects as dummy variables, which allows the <code>mediate()</code> function to run properly; or (2) estimate fixed effects models using <code>plm()</code> and manually calculate the Average Causal Mediation Effect (ACME) as the product of coefficients a×b, then use bootstrapping to test its significance.</p>
+<p>In this tutorial, we use the gapminder dataset as an example. We examine whether the effect of a country’s GDP per capita (log(gdpPercap)) on its life expectancy (lifeExp) is mediated through population size (log(pop)). In other words, we ask: Does economic development affect life expectancy indirectly by changing population levels?</p>
+<p>Solution 1: use <code>lm()</code> and add unit dummies</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>df<span class="sc">$</span>country <span class="ot">&lt;-</span> <span class="fu">factor</span>(df<span class="sc">$</span>country, <span class="at">levels =</span> <span class="fu">unique</span>(df<span class="sc">$</span>country))</span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>gapminder<span class="sc">$</span>log_gdpPercap <span class="ot">&lt;-</span> <span class="fu">log</span>(gapminder<span class="sc">$</span>gdpPercap)</span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>gapminder<span class="sc">$</span>log_pop       <span class="ot">&lt;-</span> <span class="fu">log</span>(gapminder<span class="sc">$</span>pop)</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: X → M</span></span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>m1 <span class="ot">&lt;-</span> <span class="fu">lm</span>(log_pop <span class="sc">~</span> log_gdpPercap <span class="sc">+</span> country, <span class="at">data =</span> gapminder)</span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: X + M → Y</span></span>
+<span id="cb67-10"><a href="#cb67-10" aria-hidden="true" tabindex="-1"></a>m2 <span class="ot">&lt;-</span> <span class="fu">lm</span>(lifeExp <span class="sc">~</span> log_pop <span class="sc">+</span> log_gdpPercap <span class="sc">+</span> country, <span class="at">data =</span> gapminder)</span>
+<span id="cb67-11"><a href="#cb67-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-12"><a href="#cb67-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Mediation analysis</span></span>
+<span id="cb67-13"><a href="#cb67-13" aria-hidden="true" tabindex="-1"></a>med <span class="ot">&lt;-</span> <span class="fu">mediate</span>(m1, m2, <span class="at">treat =</span> <span class="st">"log_gdpPercap"</span>, <span class="at">mediator =</span> <span class="st">"log_pop"</span>, <span class="at">boot =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Running nonparametric bootstrap</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(med)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Causal Mediation Analysis 
+
+Nonparametric Bootstrap Confidence Intervals with the Percentile Method
+
+               Estimate 95% CI Lower 95% CI Upper p-value    
+ACME              5.292        4.798         5.83  &lt;2e-16 ***
+ADE               4.477        3.948         5.00  &lt;2e-16 ***
+Total Effect      9.769        9.137        10.41  &lt;2e-16 ***
+Prop. Mediated    0.542        0.503         0.58  &lt;2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Sample Size Used: 1704 
+
+
+Simulations: 1000 </code></pre>
+</div>
+</div>
+<p>Solution 2: manually calculate ACME and bootstrap</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Prepare data as panel</span></span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>pdata <span class="ot">&lt;-</span> <span class="fu">pdata.frame</span>(gapminder, <span class="at">index =</span> <span class="fu">c</span>(<span class="st">"country"</span>, <span class="st">"year"</span>))</span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: X → M</span></span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>model_x_m <span class="ot">&lt;-</span> <span class="fu">plm</span>(<span class="fu">log</span>(pop) <span class="sc">~</span> <span class="fu">log</span>(gdpPercap), <span class="at">data =</span> pdata, <span class="at">model =</span> <span class="st">"within"</span>)</span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: X + M → Y</span></span>
+<span id="cb71-8"><a href="#cb71-8" aria-hidden="true" tabindex="-1"></a>model_m_y <span class="ot">&lt;-</span> <span class="fu">plm</span>(lifeExp <span class="sc">~</span> <span class="fu">log</span>(gdpPercap) <span class="sc">+</span> <span class="fu">log</span>(pop), <span class="at">data =</span> pdata, <span class="at">model =</span> <span class="st">"within"</span>)</span>
+<span id="cb71-9"><a href="#cb71-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb71-10"><a href="#cb71-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Indirect (mediated) effect</span></span>
+<span id="cb71-11"><a href="#cb71-11" aria-hidden="true" tabindex="-1"></a>acme <span class="ot">&lt;-</span> <span class="fu">coef</span>(model_x_m)[<span class="st">"log(gdpPercap)"</span>] <span class="sc">*</span> <span class="fu">coef</span>(model_m_y)[<span class="st">"log(pop)"</span>]</span>
+<span id="cb71-12"><a href="#cb71-12" aria-hidden="true" tabindex="-1"></a>acme</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>log(gdpPercap) 
+      5.291562 </code></pre>
+</div>
+</div>
+<p>Then, bootstrap it:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>acme_boot <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="dv">500</span>)</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">500</span>) {</span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a>  boot_data <span class="ot">&lt;-</span> gapminder[<span class="fu">sample</span>(<span class="fu">nrow</span>(gapminder), <span class="at">replace =</span> <span class="cn">TRUE</span>), ]</span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>  pdata_boot <span class="ot">&lt;-</span> <span class="fu">pdata.frame</span>(boot_data, <span class="at">index =</span> <span class="fu">c</span>(<span class="st">"country"</span>, <span class="st">"year"</span>))</span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb73-8"><a href="#cb73-8" aria-hidden="true" tabindex="-1"></a>  a <span class="ot">&lt;-</span> <span class="fu">coef</span>(<span class="fu">plm</span>(<span class="fu">log</span>(pop) <span class="sc">~</span> <span class="fu">log</span>(gdpPercap), <span class="at">data =</span> pdata_boot, <span class="at">model =</span> <span class="st">"within"</span>))[<span class="st">"log(gdpPercap)"</span>]</span>
+<span id="cb73-9"><a href="#cb73-9" aria-hidden="true" tabindex="-1"></a>  b <span class="ot">&lt;-</span> <span class="fu">coef</span>(<span class="fu">plm</span>(lifeExp <span class="sc">~</span> <span class="fu">log</span>(pop) <span class="sc">+</span> <span class="fu">log</span>(gdpPercap), <span class="at">data =</span> pdata_boot, <span class="at">model =</span> <span class="st">"within"</span>))[<span class="st">"log(pop)"</span>]</span>
+<span id="cb73-10"><a href="#cb73-10" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb73-11"><a href="#cb73-11" aria-hidden="true" tabindex="-1"></a>  acme_boot[i] <span class="ot">&lt;-</span> a <span class="sc">*</span> b</span>
+<span id="cb73-12"><a href="#cb73-12" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")
+Warning in pdata.frame(boot_data, index = c("country", "year")): duplicate couples (id-time) in resulting pdata.frame
+ to find out which, use, e.g., table(index(your_pdataframe), useNA = "ifany")</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get bootstrap CI</span></span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(acme_boot, <span class="at">probs =</span> <span class="fu">c</span>(<span class="fl">0.025</span>, <span class="fl">0.975</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    2.5%    97.5% 
+4.786336 5.841694 </code></pre>
+</div>
+</div>
+<p>We see that for both approaches, ACME equals to 5.292, and it’s statistically significant.</p>
+</section>
+<section id="instrumental-variable-in-fixed-effect" class="level1">
+<h1>Instrumental Variable in Fixed Effect</h1>
+<p>When the main independent variable of interest is endogenous – that is, correlated with unobserved factors in the error term —– ordinary fixed effects regression can produce biased estimates. Instrumental variable (IV) techniques offer a solution by using a third variable (the instrument) that affects the treatment but is uncorrelated with the outcome except through that treatment. In panel data, we can combine IV methods with fixed effects to control for both time-invariant confounders and endogeneity in the treatment variable. In this section, we’ll demonstrate how to implement two-stage least squares (2SLS) estimation with fixed effects using <code>fixest</code>.</p>
+<p>We use the CigarettesSW dataset from the <code>AER</code> package. You can find more information of this dataset in Tutorial 5. Here, we use sales (log(packs)) as a dependent variable, use price as an endogenous variable, and taxes as the instrumental variable.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the data</span></span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a><span class="fu">data</span>(<span class="st">"CigarettesSW"</span>)</span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(CigarettesSW)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     state      year         cpi          population           packs       
+ AL     : 2   1985:48   Min.   :1.076   Min.   :  478447   Min.   : 49.27  
+ AR     : 2   1995:48   1st Qu.:1.076   1st Qu.: 1622606   1st Qu.: 92.45  
+ AZ     : 2             Median :1.300   Median : 3697472   Median :110.16  
+ CA     : 2             Mean   :1.300   Mean   : 5168866   Mean   :109.18  
+ CO     : 2             3rd Qu.:1.524   3rd Qu.: 5901500   3rd Qu.:123.52  
+ CT     : 2             Max.   :1.524   Max.   :31493524   Max.   :197.99  
+ (Other):84                                                                
+     income               tax            price             taxs       
+ Min.   :  6887097   Min.   :18.00   Min.   : 84.97   Min.   : 21.27  
+ 1st Qu.: 25520384   1st Qu.:31.00   1st Qu.:102.71   1st Qu.: 34.77  
+ Median : 61661644   Median :37.00   Median :137.72   Median : 41.05  
+ Mean   : 99878736   Mean   :42.68   Mean   :143.45   Mean   : 48.33  
+ 3rd Qu.:127313964   3rd Qu.:50.88   3rd Qu.:176.15   3rd Qu.: 59.48  
+ Max.   :771470144   Max.   :99.00   Max.   :240.85   Max.   :112.63  
+                                                                      </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="co"># compute real per capita prices</span></span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>CigarettesSW<span class="sc">$</span>rprice <span class="ot">&lt;-</span> <span class="fu">with</span>(CigarettesSW, price <span class="sc">/</span> cpi)</span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a><span class="co">#  compute the sales tax</span></span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>CigarettesSW<span class="sc">$</span>salestax <span class="ot">&lt;-</span> <span class="fu">with</span>(CigarettesSW, (taxs <span class="sc">-</span> tax) <span class="sc">/</span> cpi)</span>
+<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a><span class="co"># IV model with state and year fixed effects:</span></span>
+<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Endogenous regressor: log(price)</span></span>
+<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Instrument: log(income)</span></span>
+<span id="cb79-10"><a href="#cb79-10" aria-hidden="true" tabindex="-1"></a>cig_fe_iv <span class="ot">&lt;-</span> <span class="fu">feols</span>(<span class="fu">log</span>(packs) <span class="sc">~</span> <span class="dv">1</span> <span class="sc">|</span> state <span class="sc">|</span> <span class="fu">log</span>(rprice) <span class="sc">~</span> salestax, <span class="at">data =</span> CigarettesSW)</span>
+<span id="cb79-11"><a href="#cb79-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-12"><a href="#cb79-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-13"><a href="#cb79-13" aria-hidden="true" tabindex="-1"></a><span class="co"># View results</span></span>
+<span id="cb79-14"><a href="#cb79-14" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(cig_fe_iv)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>TSLS estimation - Dep. Var.: log(packs)
+                  Endo.    : log(rprice)
+                  Instr.   : salestax
+Second stage: Dep. Var.: log(packs)
+Observations: 96
+Fixed-effects: state: 48
+Standard-errors: Clustered (state) 
+                Estimate Std. Error  t value  Pr(&gt;|t|)    
+fit_log(rprice) -1.11014   0.071606 -15.5034 &lt; 2.2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+RMSE: 0.045302     Adj. R2: 0.929389
+                 Within R2: 0.897955
+F-test (1st stage), log(rprice): stat = 237.2    , p &lt; 2.2e-16 , on 1 and 94 DoF.
+                     Wu-Hausman: stat =   1.11975, p = 0.295497, on 1 and 46 DoF.</code></pre>
+</div>
+</div>
+<p>In fixest, the formula for an instrumental variable model with fixed effects is structured in three parts: the first part includes the outcome and any exogenous regressors, the second part specifies the fixed effects, and the third part defines the endogenous regressor and its instrument. For example, in the model <code>log(packs) ~ 1 | state + year | log(rprice) ~ salestax</code>, we are modeling the effect of cigarette prices on consumption. The <code>~ 1</code> indicates that there are no additional exogenous control variables beyond the instrumented variable. If we wanted to include a control like <em>income</em>, we would instead write <code>log(packs) ~ income</code>. The <code>| state + year</code> portion adds both state and year fixed effects to account for unobserved heterogeneity across states and over time. Finally, the <code>| log(rprice) ~ salestax</code> part specifies that <code>log(rprice)</code> is endogenous and is being instrumented by salestax. This structure allows us to cleanly estimate causal effects while controlling for both confounding and endogeneity.</p>
+
+
 </section>
 
 </main> <!-- /main -->

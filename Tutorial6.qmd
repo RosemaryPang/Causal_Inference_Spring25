@@ -310,7 +310,7 @@ From the random effect output, we see that, 74% of the total error variance is d
 
 ## Hausman Test: Should We Trust Random Effects?
 
-The Hausman test allows us to formally test whether the random effects model is appropriate. The null hypothesis is that the random effects model is consistent — in other words, that there is no correlation between the unit effects and the regressors. If the test rejects the null, we should use fixed effects.
+The Hausman test allows us to formally test whether the random effects model is appropriate. The null hypothesis is that the random effects model is consistent -- in other words, that there is no correlation between the unit effects and the regressors. If the test rejects the null, we should use fixed effects.
 
 ```{r}
 # Hausman test
@@ -320,3 +320,136 @@ hausman_result
 
 p-value is smaller than 0.05, so we reject the null , and should use fixed effects (random effects are likely biased). This test helps you decide between fixed and random effects not based on fit alone, but based on the core assumption about unobserved heterogeneity in your panel data.
 
+# Nonlinear Dependent Variable
+
+So far, we’ve worked with linear fixed effects models where the outcome variable is continuous. However, in many real-world applications, outcomes are nonlinear — for example, binary decisions (e.g., adopted a policy or not), counts (e.g., number of events), or ordinal scales. In these cases, we often turn to nonlinear models such as logistic regression or Poisson regression. Fortunately, we can still incorporate fixed effects into these models to control for unobserved, time-invariant characteristics. 
+
+In this example, we’ll use the `Fatalities` dataset from the `AER` package, which contains U.S. state-level panel data from 1982 to 1988. The dataset includes information on state-level beer taxes, seatbelt laws, traffic fatalities, and minimum legal drinking ages. We'll use a binary outcome variable indicating whether the state had adopted a legal drinking age of 21 (drink21) and estimate the effect of beer taxes (while controlling the effects of spirits consumption, average miles per drive, and the percent of young drivers) on that policy using a logistic fixed effects model. This will illustrate how fixed effects can be applied in a nonlinear context and what trade-offs come with it.
+
+```{r}
+data(Fatalities, package = "AER")
+
+summary(Fatalities$drinkage)
+length(unique(Fatalities$state)) # 48 states
+
+Fatalities$drink21 <- ifelse(Fatalities$drinkage == 21, 1, 0)
+
+head(Fatalities)
+```
+
+```{r}
+# Fixed effects logit model
+fe_logit <- feglm(drink21 ~ beertax + spirits + miles + youngdrivers | state,
+                  data = Fatalities,
+                  family = binomial())
+summary(fe_logit)
+```
+
+The original data has 48 states. However, as the note says, 25 fixed-effects (175 observations) removed because of only 0 (or only 1) outcomes. This leaves only 23 states in the analysis. This happens because the logistic fixed effects model can only use units (e.g., states) where there is variation in the binary outcome. In this case, if a state always had a legal drinking age of 21 (i.e., drink21 = 1 for all years) or never had it (drink21 = 0), the model cannot estimate a likelihood contribution for that unit -- so it is dropped from the estimation. This is a known limitation of nonlinear fixed effects models and is especially common in short panels or when the outcome is rare or mostly one-sided.
+
+From the output, we see that *Beer Tax* has a positive effect on the odds of having a drinking age of 21 -- states with higher beer taxes are more likely to have stricter drinking laws, although the result is marginally significant (p ≈ 0.06). 
+
+Now let’s fit the same model using a linear fixed effects approach and compare the results.
+
+```{r}
+fe_linear <- feols(drink21 ~ beertax + spirits + miles + youngdrivers | state, data = Fatalities)
+summary(fe_linear)
+```
+
+When we compare the results of the linear model to the fixed effects logit model, we see that the estimates differ noticeably in both direction and statistical significance. For example, in the linear model, the coefficient for *beertax* is negative and insignificant, while in the logit model, it was positive and marginally significant. Similarly, *spirits consumption* was strongly negative and statistically significant in the logit model, but its effect is much smaller and weaker in the linear model. These discrepancies highlight how the choice of model -- especially whether it accounts for the binary nature of the outcome -- can substantially affect conclusions.
+
+# Mediation analysis in panel data
+
+Mediation analysis helps us understand how a treatment or predictor variable affects an outcome by introducing a third variable -- the mediator -- that transmits the effect. While the `mediation` package in R is commonly used for this purpose, it does not support fixed effects models from packages like `plm` or `fixest`, which are essential for panel data. 
+
+To work around this limitation, we introduce two practical solutions: (1) use `lm()` and manually include unit fixed effects as dummy variables, which allows the `mediate()` function to run properly; or (2) estimate fixed effects models using `plm()` and manually calculate the Average Causal Mediation Effect (ACME) as the product of coefficients a×b, then use bootstrapping to test its significance.
+
+In this tutorial, we use the gapminder dataset as an example. We examine whether the effect of a country’s GDP per capita (log(gdpPercap)) on its life expectancy (lifeExp) is mediated through population size (log(pop)). In other words, we ask: Does economic development affect life expectancy indirectly by changing population levels? 
+
+Solution 1: use `lm()` and add unit dummies
+
+```{r}
+df$country <- factor(df$country, levels = unique(df$country))
+gapminder$log_gdpPercap <- log(gapminder$gdpPercap)
+gapminder$log_pop       <- log(gapminder$pop)
+
+
+# Step 1: X → M
+m1 <- lm(log_pop ~ log_gdpPercap + country, data = gapminder)
+
+# Step 2: X + M → Y
+m2 <- lm(lifeExp ~ log_pop + log_gdpPercap + country, data = gapminder)
+
+# Mediation analysis
+med <- mediate(m1, m2, treat = "log_gdpPercap", mediator = "log_pop", boot = TRUE)
+summary(med)
+```
+
+
+Solution 2: manually calculate ACME and bootstrap 
+
+```{r}
+# Prepare data as panel
+pdata <- pdata.frame(gapminder, index = c("country", "year"))
+
+# Step 1: X → M
+model_x_m <- plm(log(pop) ~ log(gdpPercap), data = pdata, model = "within")
+
+# Step 2: X + M → Y
+model_m_y <- plm(lifeExp ~ log(gdpPercap) + log(pop), data = pdata, model = "within")
+
+# Indirect (mediated) effect
+acme <- coef(model_x_m)["log(gdpPercap)"] * coef(model_m_y)["log(pop)"]
+acme
+```
+
+Then, bootstrap it:
+
+```{r}
+set.seed(123)
+acme_boot <- numeric(500)
+
+for (i in 1:500) {
+  boot_data <- gapminder[sample(nrow(gapminder), replace = TRUE), ]
+  pdata_boot <- pdata.frame(boot_data, index = c("country", "year"))
+  
+  a <- coef(plm(log(pop) ~ log(gdpPercap), data = pdata_boot, model = "within"))["log(gdpPercap)"]
+  b <- coef(plm(lifeExp ~ log(pop) + log(gdpPercap), data = pdata_boot, model = "within"))["log(pop)"]
+  
+  acme_boot[i] <- a * b
+}
+
+# Get bootstrap CI
+quantile(acme_boot, probs = c(0.025, 0.975))
+```
+
+We see that for both approaches, ACME equals to 5.292, and it's statistically significant.
+
+# Instrumental Variable in Fixed Effect
+
+When the main independent variable of interest is endogenous -- that is, correlated with unobserved factors in the error term —-- ordinary fixed effects regression can produce biased estimates. Instrumental variable (IV) techniques offer a solution by using a third variable (the instrument) that affects the treatment but is uncorrelated with the outcome except through that treatment. In panel data, we can combine IV methods with fixed effects to control for both time-invariant confounders and endogeneity in the treatment variable. In this section, we'll demonstrate how to implement two-stage least squares (2SLS) estimation with fixed effects using `fixest`.
+
+We use the CigarettesSW dataset from the `AER` package. You can find more information of this dataset in Tutorial 5. Here, we use sales (log(packs)) as a dependent variable, use price as an endogenous variable, and taxes as the instrumental variable. 
+
+```{r}
+# Load the data
+data("CigarettesSW")
+summary(CigarettesSW)
+
+# compute real per capita prices
+CigarettesSW$rprice <- with(CigarettesSW, price / cpi)
+
+#  compute the sales tax
+CigarettesSW$salestax <- with(CigarettesSW, (taxs - tax) / cpi)
+
+# IV model with state and year fixed effects:
+# Endogenous regressor: log(price)
+# Instrument: log(income)
+cig_fe_iv <- feols(log(packs) ~ 1 | state | log(rprice) ~ salestax, data = CigarettesSW)
+
+
+# View results
+summary(cig_fe_iv)
+```
+
+In fixest, the formula for an instrumental variable model with fixed effects is structured in three parts: the first part includes the outcome and any exogenous regressors, the second part specifies the fixed effects, and the third part defines the endogenous regressor and its instrument. For example, in the model `log(packs) ~ 1 | state + year | log(rprice) ~ salestax`, we are modeling the effect of cigarette prices on consumption. The `~ 1` indicates that there are no additional exogenous control variables beyond the instrumented variable. If we wanted to include a control like *income*, we would instead write `log(packs) ~ income`. The `| state + year` portion adds both state and year fixed effects to account for unobserved heterogeneity across states and over time. Finally, the `| log(rprice) ~ salestax` part specifies that `log(rprice)` is endogenous and is being instrumented by salestax. This structure allows us to cleanly estimate causal effects while controlling for both confounding and endogeneity.
