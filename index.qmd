@@ -19,3 +19,5 @@ This tutorial website contains the R code and output of weekly tutorials.
 [Week 5 Instrumental Variable](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial5.html)
 
 [Week 6 Panel Data Analysis](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial6.html)
+
+[Week 7 Difference in Differences](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial7.html)
