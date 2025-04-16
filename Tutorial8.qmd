@@ -1,0 +1,211 @@
+---
+title: "Tutorial 8 Matching"
+pagetitle: Tutorial_8
+---
+
+**Matching** is a powerful tool for causal inference in observational studies. It helps reduce selection bias by constructing a comparison group that closely resembles the treatment group on observed covariates. This tutorial walks you through key types of matching methods and strategies, from simple exact matching to more flexible or model-based approaches. You’ll learn how to implement matching in R, interpret matched results, and decide when to combine matching with regression.
+
+By the end of this tutorial, you will be familiar with:
+
+1\. Exact Matching
+
+2\. Distance Matching (e.g., Mahalanobis distance)
+
+3\. Propensity Score Matching (PSM)
+
+4\. Coarsened Exact Matching (CEM)
+
+5.Matching and Regression Adjustment
+
+# Front-end Matters
+
+In this tutorial, we will primarily use the `MatchIt` package in R, which provides a unified and user-friendly interface for implementing a wide range of matching methods, including exact matching, Mahalanobis distance matching, and propensity score matching. `MatchIt` is widely used in applied causal inference and integrates smoothly with tools for assessing balance and post-matching analysis. For methods not currently supported by `MatchIt` -- such as Coarsened Exact Matching (CEM) -- we will use dedicated package `cem`. These tools allow us to explore the strengths and limitations of different approaches and understand how implementation choices can affect our causal estimates.
+
+```{r}
+#install.packages("MatchIt")
+#install.packages("cem")
+
+library(MatchIt)
+library(cem)
+```
+
+The dataset we’re using for this tutorial is the *lalonde* dataset from the `MatchIt` package. It comes from a well-known job training study and includes both treated and control groups, as well as covariates like age, education, race, and pre-treatment earnings. This dataset is widely used in causal inference because it’s simple, real, and flexible—it works well with all the matching methods we’re covering, including exact matching, distance matching, propensity score matching, coarsened exact matching, entropy balancing, and matching combined with regression.
+
+```{r}
+data("lalonde")
+head(lalonde)
+```
+
+# Exact Matching
+
+**Exact matching** is the most straightforward matching method, where treated and control units are matched only if they have identical values on all selected covariates. It guarantees perfect covariate balance within matched pairs or groups, making it conceptually clean and easy to interpret. However, it becomes difficult to implement when covariates are continuous or when there are many variables, as exact matches become increasingly rare. Despite this limitation, exact matching is a valuable foundation for understanding more flexible matching methods and is especially useful in clean, low-dimensional datasets.
+
+```{r}
+match_single <- matchit(treat ~ race, data = lalonde, method = "exact")
+summary(match_single)
+```
+
+After performing exact matching on the race variable using the *Lalonde* dataset, we see that covariate balance improved substantially. Before matching, the distribution of race was highly imbalanced between treated and control groups—for example, 84% of treated units were Black, compared to only 20% of controls. After matching, the race proportions are perfectly aligned across groups, as expected from exact matching: every matched pair has the same race category.
+
+The summary reports that all 185 treated units were matched to 429 control units, with an **effective sample size (ESS)** of 121 for the control group. ESS tells us how much unique, independent information those matched controls contribute—after accounting for weighting or reuse. In the output, the ESS for controls is 121, even though 429 were matched.This means many control units were reused, which is common when matching with replacement.
+
+The key takeaway here is that while exact matching on one variable (race) ensures perfect balance on that variable, it does not address imbalance on other covariates like age or education. Also, although no units were discarded, the ESS reminds us that reuse of controls may reduce precision when estimating treatment effects.
+
+```{r}
+# Get matched data
+matched_data <- match.data(match_single)
+
+# Estimate ATT as difference in means
+mean(matched_data$re78[matched_data$treat == 1]) -
+mean(matched_data$re78[matched_data$treat == 0])
+```
+
+After performing exact matching, we can estimate the treatment effect using the matched data. By taking the difference between the means of treated and control groups, we get the **Average Treatment Effect on the Treated (ATT)**. In this case, the result is –635.03, which means that, on average, individuals who received the treatment earned \$635 less than their matched counterparts who did not. While the matching step ensures that the two groups are balanced on the covariate used (race), this negative result suggests that race alone may not be sufficient to control for all confounding. Adding more covariates to the matching process may give a more accurate estimate. That’s why we are matching on multiple variables next.
+
+```{r}
+# Exact Matching on multiple variables (e.g., race, education, and age)
+match_multi <- matchit(treat ~ race + educ + age, data = lalonde, method = "exact")
+summary(match_multi)
+```
+
+After performing exact matching on multiple covariates (race, educ, and age), the means for all covariates were perfectly aligned between the treated and control groups. This is expected from exact matching, which only retains pairs that are exactly the same on the specified covariates.
+
+However, this improved balance comes at a cost: out of 185 treated units, only 72 could be matched; and from 429 controls, only 85 were used. The ESS for controls drops even further to around 46, reflecting the downweighting of reused or overlapping units. This is a common trade-off with exact matching—perfect balance, but reduced sample size and precision. Still, it serves as a strong baseline for comparing other, more flexible matching methods.
+
+```{r}
+# Get matched data
+matched_data <- match.data(match_multi)
+
+# Estimate ATT as difference in means
+mean(matched_data$re78[matched_data$treat == 1]) -
+mean(matched_data$re78[matched_data$treat == 0])
+```
+
+The ATT is –381, meaning treated individuals earned \$381 less on average than their matched control counterparts. This is smaller (less negative) than our earlier estimate from matching only on race (–635), suggesting that adding more covariates has helped create a more comparable control group and reduced confounding. However, because exact matching on multiple variables is stricter, fewer treated units were matched, which may affect the precision of our estimate.
+
+# Distance Matching (Mahalanobis Distance)
+
+**Distance matching** selects control units for each treated unit based on how similar they are across multiple covariates, using a distance metric like Mahalanobis distance. This approach works well with continuous variables and doesn’t require exact matches. It accounts for differences across all matching variables simultaneously and selects the best matches based on how “close” units are in multivariate space. Below, we use Mahalanobis distance matching to compare treated and control units in the *Lalonde* dataset based on age, education, and race.
+
+```{r}
+match_mahal <- matchit(treat ~ age + educ + race,
+                       data = lalonde,
+                       method = "nearest",
+                       distance = "mahalanobis")
+#                      ratio=3
+# include this line for k-nearest-neighbor where k=3)
+
+# Summary of matching results
+summary(match_mahal)
+
+# Extract matched data
+matched_mahal <- match.data(match_mahal)
+
+# Estimate ATT
+mean(matched_mahal$re78[matched_mahal$treat == 1]) -
+mean(matched_mahal$re78[matched_mahal$treat == 0])
+```
+
+After performing 1-to-1 Mahalanobis distance matching, we estimate the ATT using the matched sample. The result is 76.39, meaning that treated individuals earned \$76 more on average than their matched control counterparts. This positive treatment effect contrasts with earlier estimates from exact matching, which were negative. Matching on multiple continuous covariates using Mahalanobis distance helps improve comparability and may lead to more accurate effect estimates—though we should still assess covariate balance and interpret results cautiously, especially with a modest effect size like this.
+
+# Propensity Score Matching
+
+**Propensity Score Matching (PSM)** is a widely used method for reducing selection bias in observational studies. Instead of matching directly on all covariates, PSM first estimates the propensity score—the probability of receiving the treatment given observed covariates -- typically using logistic regression. Treated and control units are then matched based on how close their propensity scores are. This simplifies the matching problem to a one-dimensional scale while attempting to balance the distribution of all covariates. Below, we estimate the propensity score and perform nearest-neighbor matching to evaluate the treatment effect.
+
+```{r}
+# Propensity score matching (1-to-1 nearest neighbor)
+match_psm <- matchit(
+  treat ~ age + educ + race + nodegree + married + re74 + re75,
+  data = lalonde,
+  method = "nearest",           # matching approach
+  distance = "logit",           # propensity score model 
+  caliper = 0.1,                # optional: only match a control unit if its propensity scoree is within 0.1 of the treated unit's score. Avoid bad matches. 
+  replace = TRUE                # allow controls to be reused
+)
+
+# Summary of matching result
+summary(match_psm)
+
+# Extract matched dataset
+matched_psm <- match.data(match_psm)
+
+# Estimate ATT
+mean(matched_psm$re78[matched_psm$treat == 1]) -
+mean(matched_psm$re78[matched_psm$treat == 0])
+```
+
+After performing Propensity Score Matching, we estimate the ATT using the matched dataset. The result is 1645.18, which means that treated individuals earned \$1,645 more on average than their matched control counterparts in 1978. This positive effect is substantially larger than the results we observed with exact or Mahalanobis matching. By matching on the estimated probability of receiving treatment -- rather than raw covariates -- PSM attempts to balance all observed covariates simultaneously. However, this result should be interpreted with caution, as PSM is highly dependent on the correct specification of the propensity score model and may still be sensitive to imbalance or poor overlap.
+
+A Love plot is a simple and effective way to visualize covariate balance before and after matching. It displays the standardized mean differences (SMDs) for each covariate, allowing you to assess how well matching reduced imbalance between treated and control groups. In the plot, you typically want all post-matching dots to fall close to zero (e.g., within ±0.1), indicating good balance.
+
+```{r}
+library(cobalt)
+love.plot(match_psm, threshold = 0.1)
+```
+
+While most covariates show improved balance after propensity score matching, age remains slightly imbalanced, with a standardized mean difference just beyond the ±0.1 threshold. This suggests the PSM model may need to be refined -- perhaps by adding interactions, higher-order terms, or considering a caliper restriction to enforce closer matches.
+
+# Coarsened Exact Matching
+
+**Coarsened Exact Matching (CEM)** is a flexible matching method that improves on traditional exact matching by binning continuous variables into broader categories, or "coarsened" groups. Instead of requiring exact matches on precise values (which can be too strict), CEM allows treated and control units to be matched exactly within coarsened bins, such as age ranges or income brackets. This method balances covariates by design, reduces model dependence, and retains interpretability. It is particularly useful when covariates are a mix of categorical and continuous variables.
+
+```{r}
+# function from cem package
+cem_out <- cem(
+  treatment = "treat",
+  data = lalonde,
+  drop = "re78",  # don't match on outcome
+  cutpoints = list(
+    age = c(20, 25, 30, 35, 40, 45),    
+    re74 = c(0, 5000, 10000, 20000),
+    re75 = c(0, 5000, 10000, 20000)
+  )# coarsen continuous variables into bins
+)
+
+summary(cem_out)
+```
+
+This summary gives you the internal structure of the cem object. While it's not very reader-friendly on its own, here are the most important pieces:
+
+-   `w`: This is the vector of weights. Each observation in your dataset gets a weight—usually: 0 if the unit was unmatched; 1 (or higher) if it was matched and kept. These weights are used to estimate the weighted ATT
+
+-   `matched`: A logical vector indicating which rows were matched (TRUE) and which were discarded (FALSE).
+
+-   `cutpoints` (in breaks): These show how continuous variables (like age, re74, re75) were binned into categories.
+
+-   `tab`: Gives counts of how many treated and control units were in each matched stratum.
+
+```{r}
+# Estimate ATT manually using matched weights
+cem_matched <- lalonde
+cem_matched$weights <- cem_out$w
+with(cem_matched, weighted.mean(re78[treat == 1], weights[treat == 1]) -
+                   weighted.mean(re78[treat == 0], weights[treat == 0]))
+```
+
+This code calculates the ATT after CEM. It uses the weights assigned by the matching procedure to compute the weighted mean outcome (`re78`) separately for treated and control units. Then it subtracts the two means to estimate the ATT. In this case, the result is 357.24, meaning that treated individuals earned \$357 more on average than their matched control counterparts. This estimate reflects comparisons within well-balanced strata created by coarsening the covariates, making it more robust to model misspecification than some other methods like propensity score matching.
+
+# Matching and Regression
+
+After matching, we can further refine our treatment effect estimates by running a regression model on the matched sample. This approach is useful because matching alone may not perfectly balance all covariates or remove all bias. Running a regression on matched data allows us to adjust for any remaining imbalance and can also improve statistical efficiency (e.g., by reducing variance). Importantly, regression after matching is more trustworthy because it is based on better covariate overlap and requires fewer functional form assumptions than regression on the full, unmatched sample.
+
+```{r}
+# We already have the matched data
+head(cem_matched)
+
+reg_cem <- lm(re78 ~ treat + age + educ + race + nodegree + married + re74 + re75,
+              data = cem_matched,
+              weights = weights)
+
+reg_original <- lm(re78 ~ treat + age + educ + race + nodegree + married + re74 + re75,
+              data = lalonde)
+
+summary(reg_cem)
+summary(reg_original)
+```
+
+After estimating ATT with regression on both the original and the CEM-matched datasets, we observe the following:
+
+-   Original Data (no matching): The coefficient for treat is \$1,548 and statistically significant (p = 0.048). But this model relies on stronger functional form assumptions and extrapolates across imbalanced groups.
+
+-   CEM-Matched Data + Weighted Regression: The coefficient for treat drops to \$642 and is not statistically significant (p = 0.416). This model is estimated on a more balanced sample, thanks to coarsened exact matching, and is likely more reliable even if the effect is smaller and noisier.
