@@ -158,6 +158,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <a class="nav-link active" href="./Tutorial8.html" aria-current="page"> 
 <span class="menu-text">Tutorial8</span></a>
   </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial9.html"> 
+<span class="menu-text">Tutorial9</span></a>
+  </li>  
 </ul>
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
@@ -372,7 +376,7 @@ Discarded        0.         0</code></pre>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>                       <span class="at">data =</span> lalonde,</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>                       <span class="at">method =</span> <span class="st">"nearest"</span>,</span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>                       <span class="at">distance =</span> <span class="st">"mahalanobis"</span>)</span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">#                      ratio=3</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">#                      ratio=3)</span></span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="co"># include this line for k-nearest-neighbor where k=3)</span></span>
 <span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Summary of matching results</span></span>
@@ -440,7 +444,7 @@ Discarded       0       0</code></pre>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> lalonde,</span>
 <span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"nearest"</span>,           <span class="co"># matching approach</span></span>
 <span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">distance =</span> <span class="st">"logit"</span>,           <span class="co"># propensity score model </span></span>
-<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">caliper =</span> <span class="fl">0.1</span>,                <span class="co"># optional: only match a control unit if its propensity scoree is within 0.1 of the treated unit's score. Avoid bad matches. </span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">caliper =</span> <span class="fl">0.1</span>,                <span class="co"># optional: only match a control unit if its propensity score is within 0.1 of the treated unit's score. Avoid bad matches. </span></span>
 <span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">replace =</span> <span class="cn">TRUE</span>                <span class="co"># allow controls to be reused</span></span>
 <span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a></span>

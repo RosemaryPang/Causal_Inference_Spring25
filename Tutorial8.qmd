@@ -92,7 +92,7 @@ match_mahal <- matchit(treat ~ age + educ + race,
                        data = lalonde,
                        method = "nearest",
                        distance = "mahalanobis")
-#                      ratio=3
+#                      ratio=3)
 # include this line for k-nearest-neighbor where k=3)
 
 # Summary of matching results
@@ -119,7 +119,7 @@ match_psm <- matchit(
   data = lalonde,
   method = "nearest",           # matching approach
   distance = "logit",           # propensity score model 
-  caliper = 0.1,                # optional: only match a control unit if its propensity scoree is within 0.1 of the treated unit's score. Avoid bad matches. 
+  caliper = 0.1,                # optional: only match a control unit if its propensity score is within 0.1 of the treated unit's score. Avoid bad matches. 
   replace = TRUE                # allow controls to be reused
 )
 

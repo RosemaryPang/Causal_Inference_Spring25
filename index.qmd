@@ -23,3 +23,5 @@ This tutorial website contains the R code and output of weekly tutorials.
 [Week 7 Difference in Differences](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial7.html)
 
 [Week 8 Matching](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial8.html)
+
+[Week 9 Synthetic Control](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial9.html)
