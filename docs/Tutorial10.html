@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.5.57">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Tutorial_10 – DACSS790 Causal Inference Spring 2025</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">DACSS790 Causal Inference Spring 2025</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="./index.html"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial1.html"> 
+<span class="menu-text">Tutorial1</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial2.html"> 
+<span class="menu-text">Tutorial2</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial3.html"> 
+<span class="menu-text">Tutorial3</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial4.html"> 
+<span class="menu-text">Tutorial4</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial5.html"> 
+<span class="menu-text">Tutorial5</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial6.html"> 
+<span class="menu-text">Tutorial6</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial7.html"> 
+<span class="menu-text">Tutorial7</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial8.html"> 
+<span class="menu-text">Tutorial8</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./Tutorial9.html"> 
+<span class="menu-text">Tutorial9</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link active" href="./Tutorial10.html" aria-current="page"> 
+<span class="menu-text">Tutorial10</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#front-end-matters" id="toc-front-end-matters" class="nav-link active" data-scroll-target="#front-end-matters">Front-end Matters</a></li>
+  <li><a href="#sharp-rdd" id="toc-sharp-rdd" class="nav-link" data-scroll-target="#sharp-rdd">Sharp RDD</a></li>
+  <li><a href="#introducing-dataset" id="toc-introducing-dataset" class="nav-link" data-scroll-target="#introducing-dataset">Introducing Dataset</a>
+  <ul class="collapse">
+  <li><a href="#checking-for-sharp-rdd" id="toc-checking-for-sharp-rdd" class="nav-link" data-scroll-target="#checking-for-sharp-rdd">Checking for sharp RDD</a></li>
+  <li><a href="#ols-regession" id="toc-ols-regession" class="nav-link" data-scroll-target="#ols-regession">OLS regession</a>
+  <ul class="collapse">
+  <li><a href="#assume-common-slope" id="toc-assume-common-slope" class="nav-link" data-scroll-target="#assume-common-slope">Assume common slope</a></li>
+  <li><a href="#different-slopes" id="toc-different-slopes" class="nav-link" data-scroll-target="#different-slopes">Different slopes</a></li>
+  </ul></li>
+  <li><a href="#non-linear-model" id="toc-non-linear-model" class="nav-link" data-scroll-target="#non-linear-model">Non-linear model</a></li>
+  <li><a href="#using-rdrobust-package" id="toc-using-rdrobust-package" class="nav-link" data-scroll-target="#using-rdrobust-package">Using <code>rdrobust</code> package</a></li>
+  <li><a href="#adding-quadratic-term-in-rdrobust" id="toc-adding-quadratic-term-in-rdrobust" class="nav-link" data-scroll-target="#adding-quadratic-term-in-rdrobust">Adding Quadratic Term in <code>rdrobust</code></a></li>
+  </ul></li>
+  <li><a href="#fuzzy-rdd" id="toc-fuzzy-rdd" class="nav-link" data-scroll-target="#fuzzy-rdd">Fuzzy RDD</a>
+  <ul class="collapse">
+  <li><a href="#introducing-data" id="toc-introducing-data" class="nav-link" data-scroll-target="#introducing-data">Introducing Data</a></li>
+  <li><a href="#checking-for-fuzzy-rdd" id="toc-checking-for-fuzzy-rdd" class="nav-link" data-scroll-target="#checking-for-fuzzy-rdd">Checking for Fuzzy RDD</a></li>
+  <li><a href="#instrumental-variable" id="toc-instrumental-variable" class="nav-link" data-scroll-target="#instrumental-variable">Instrumental Variable</a></li>
+  <li><a href="#using-rdrobust" id="toc-using-rdrobust" class="nav-link" data-scroll-target="#using-rdrobust">Using <code>rdrobust</code></a></li>
+  </ul></li>
+  <li><a href="#diagnostic" id="toc-diagnostic" class="nav-link" data-scroll-target="#diagnostic">Diagnostic</a>
+  <ul class="collapse">
+  <li><a href="#density-test-mccrary-test" id="toc-density-test-mccrary-test" class="nav-link" data-scroll-target="#density-test-mccrary-test">Density Test (McCrary Test)</a></li>
+  <li><a href="#covariate-balance-check" id="toc-covariate-balance-check" class="nav-link" data-scroll-target="#covariate-balance-check">Covariate Balance Check</a></li>
+  <li><a href="#placebo-cutoff" id="toc-placebo-cutoff" class="nav-link" data-scroll-target="#placebo-cutoff">Placebo Cutoff</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Tutorial 10 Regression Discontinuity Design</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p><strong>Regression Discontinuity Design (RDD)</strong> is a widely used quasi-experimental method for causal inference that leverages a known cutoff in a continuous running variable to assign treatment. By comparing units just above and just below the threshold, RDD estimates the causal effect of treatment in settings where randomization is not feasible but assignment rules are clearly defined. When implemented correctly, it provides highly credible local estimates with minimal modeling assumptions.</p>
+<p>By the end of this tutorial, you will be familiar with:</p>
+<p>1. Sharp RDD</p>
+<p>2. Fuzzy RDD</p>
+<p>3. Diagnostic Test</p>
+<section id="front-end-matters" class="level1">
+<h1>Front-end Matters</h1>
+<p>The <code>rdrobust</code> package is a comprehensive R toolkit for implementing regression discontinuity designs, offering robust estimation, inference, and visualization tools. It supports both sharp and fuzzy RDD, automatically selects optimal bandwidths, and applies bias-corrected local polynomial regression to improve reliability. Widely used in applied research, <code>rdrobust</code> simplifies credible RDD analysis with minimal manual tuning.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#install.packages("rdrobust")</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rdrobust)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2) </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr) </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ forcats   1.0.0     ✔ stringr   1.5.1
+✔ lubridate 1.9.4     ✔ tibble    3.2.1
+✔ purrr     1.0.2     ✔ tidyr     1.3.1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ dplyr::filter() masks stats::filter()
+✖ dplyr::lag()    masks stats::lag()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(estimatr) <span class="co">#for IV estimation</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="sharp-rdd" class="level1">
+<h1>Sharp RDD</h1>
+</section>
+<section id="introducing-dataset" class="level1">
+<h1>Introducing Dataset</h1>
+<p>The MLDA dataset contains data on individuals near the U.S. legal minimum drinking age of 21, making it ideal for regression discontinuity analysis. Because turning 21 introduces a sudden change in legal access to alcohol, this dataset allows us to examine the causal impact of legal drinking on risky behaviors and outcomes, such as motor vehicle accident deaths.</p>
+<p>The treatment/cutoff is age 21. Forcing variable is centered around the cutoff (age-cutoff).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>mlda_df <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"https://raw.githubusercontent.com/seramirezruiz/stats-ii-lab/master/Session%206/data/mlda.csv"</span>) <span class="co"># loading data from Mastering Metrics</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+Rows: 48 Columns: 25
+── Column specification
+──────────────────────────────────────────────────────── Delimiter: "," dbl
+(25): ...1, agecell, all, allfitted, internal, internalfitted, external,...
+ℹ Use `spec()` to retrieve the full column specification for this data. ℹ
+Specify the column types or set `show_col_types = FALSE` to quiet this message.
+• `` -&gt; `...1`</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(mlda_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 25
+   ...1 agecell   all allfitted internal internalfitted external externalfitted
+  &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;          &lt;dbl&gt;    &lt;dbl&gt;          &lt;dbl&gt;
+1     1    19.1  92.8      91.7     16.6           16.7     76.2           75.0
+2     2    19.2  95.1      91.9     18.3           16.9     76.8           75.0
+3     3    19.2  92.1      92.0     18.9           17.1     73.2           75.0
+4     4    19.3  88.4      92.2     16.1           17.3     72.3           74.9
+5     5    19.4  88.7      92.3     17.4           17.4     71.3           74.9
+6     6    19.5  90.2      92.5     17.9           17.6     72.3           74.9
+# ℹ 17 more variables: alcohol &lt;dbl&gt;, alcoholfitted &lt;dbl&gt;, homicide &lt;dbl&gt;,
+#   homicidefitted &lt;dbl&gt;, suicide &lt;dbl&gt;, suicidefitted &lt;dbl&gt;, mva &lt;dbl&gt;,
+#   mvafitted &lt;dbl&gt;, drugs &lt;dbl&gt;, drugsfitted &lt;dbl&gt;, externalother &lt;dbl&gt;,
+#   externalotherfitted &lt;dbl&gt;, age &lt;dbl&gt;, forcing &lt;dbl&gt;, over21 &lt;dbl&gt;,
+#   treatment &lt;dbl&gt;, outcome &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<section id="checking-for-sharp-rdd" class="level2">
+<h2 class="anchored" data-anchor-id="checking-for-sharp-rdd">Checking for sharp RDD</h2>
+<p>Before conducting any estimation, it’s useful to visualize treatment assignment relative to the cutoff to check whether the regression discontinuity design is sharp or fuzzy. In a sharp RDD, treatment switches cleanly from 0 to 1 at the threshold—meaning everyone above the cutoff receives treatment, and everyone below does not. This plot shows how the binary treatment variable changes with age.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(mlda_df, <span class="fu">aes</span>(<span class="at">x =</span> agecell, <span class="co"># actual age</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">y =</span> treatment, <span class="co"># are they over 21 or not</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">color =</span> <span class="fu">factor</span>(treatment))) <span class="sc">+</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span> </span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Age"</span>, </span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Treatment Probability"</span>) <span class="sc">+</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_discrete</span>(<span class="at">name =</span> <span class="st">" "</span>, </span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Under legal drinking age"</span>, <span class="st">"Over legal drinking age"</span>)) <span class="sc">+</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">21</span>, <span class="at">linetype =</span> <span class="st">"dotted"</span>) <span class="sc">+</span> <span class="co"># NEW GEOM A VERTICAL LINE!</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We observe a clear and immediate jump at age 21, it confirms that treatment assignment follows a sharp design.</p>
+</section>
+<section id="ols-regession" class="level2">
+<h2 class="anchored" data-anchor-id="ols-regession">OLS regession</h2>
+<p>This plot provides a visual overview of the relationship between the running variable (age) and the outcome of interest (mortality rate from motor vehicle accidents). By plotting the outcome against age and adding a vertical line at the cutoff (21), we can explore whether there appears to be a visible discontinuity at the legal drinking age. This kind of exploratory visualization helps assess whether a treatment effect is plausible before running any formal regression — a sharp jump in the outcome at the cutoff would suggest a potential causal impact of legal alcohol access on accident-related mortality.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(mlda_df, </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>       <span class="fu">aes</span>(<span class="at">x =</span> agecell, <span class="co"># age </span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>           <span class="at">y =</span> outcome)) <span class="sc">+</span> <span class="co"># mortality rate per 100k accidents</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">21</span>, <span class="at">linetype =</span> <span class="st">"dotted"</span>) <span class="sc">+</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Exploratory plot"</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x =</span> <span class="st">"Forcing variable (Age)"</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"Mortality rate from motor vehicle </span><span class="sc">\n</span><span class="st">accidents (per 100,000)"</span>) <span class="sc">+</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="assume-common-slope" class="level3">
+<h3 class="anchored" data-anchor-id="assume-common-slope">Assume common slope</h3>
+<p>We begin our analysis with a simple linear model assuming a common slope on both sides of the cutoff. This model regresses the outcome on the treatment indicator and the running variable (forcing, i.e., age-cutoff), without allowing for different trends below and above the threshold. While this approach does not fully capture the local, nonparametric nature of RDD, it helps build intuition about how treatment status and the running variable relate to the outcome.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>linear_common_slope <span class="ot">&lt;-</span> <span class="fu">lm</span>(outcome <span class="sc">~</span> treatment <span class="sc">+</span> forcing, <span class="at">data =</span> mlda_df)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(linear_common_slope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = outcome ~ treatment + forcing, data = mlda_df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-2.5318 -0.8494 -0.1800  0.7577  3.3094 
+
+Coefficients:
+            Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)  29.3560     0.4293  68.386  &lt; 2e-16 ***
+treatment     4.5340     0.7680   5.904 4.34e-07 ***
+forcing      -3.1488     0.3372  -9.337 4.26e-12 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.329 on 45 degrees of freedom
+Multiple R-squared:  0.7025,    Adjusted R-squared:  0.6893 
+F-statistic: 53.14 on 2 and 45 DF,  p-value: 1.419e-12</code></pre>
+</div>
+</div>
+<p>Results show that crossing the legal drinking age threshold at 21 years old causes an increase of approximately 4.53 motor vehicle accident deaths per 100,000 people.</p>
+</section>
+<section id="different-slopes" class="level3">
+<h3 class="anchored" data-anchor-id="different-slopes">Different slopes</h3>
+<p>This model extends the basic linear specification by allowing for different slopes on either side of the cutoff through an interaction between treatment status and the running variable. By including treatment*forcing, we allow the effect of age on the outcome to vary depending on whether an individual is below or above the legal drinking age. This is more flexible than the common slope model and better reflects the structure of an RDD, where treatment is expected to cause a shift in both level and possibly the trend of the outcome. Although still parametric, this model moves us closer to the logic of RDD by capturing differential trends around the cutoff.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>linear_different_slope <span class="ot">&lt;-</span> <span class="fu">lm</span>(outcome <span class="sc">~</span> treatment<span class="sc">*</span>forcing, <span class="at">data =</span> mlda_df)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(linear_different_slope)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = outcome ~ treatment * forcing, data = mlda_df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-2.4124 -0.7774 -0.2913  0.8495  3.2378 
+
+Coefficients:
+                  Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)        29.9292     0.5308  56.390  &lt; 2e-16 ***
+treatment           4.5340     0.7506   6.041 2.94e-07 ***
+forcing            -2.5676     0.4661  -5.508 1.77e-06 ***
+treatment:forcing  -1.1624     0.6592  -1.763   0.0848 .  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.299 on 44 degrees of freedom
+Multiple R-squared:  0.7222,    Adjusted R-squared:  0.7032 
+F-statistic: 38.13 on 3 and 44 DF,  p-value: 2.671e-12</code></pre>
+</div>
+</div>
+<p>Results show that crossing the legal drinking age threshold at 21 years old causes an increase of approximately 4.53 motor vehicle accident deaths per 100,000 people.</p>
+</section>
+</section>
+<section id="non-linear-model" class="level2">
+<h2 class="anchored" data-anchor-id="non-linear-model">Non-linear model</h2>
+<p>This model incorporates a quadratic specification to allow for curvature in the relationship between age and the outcome on either side of the cutoff. By including both forcing^2 and its interaction with treatment, we allow the outcome to follow a curved trend that can differ above and below the threshold. This is useful when the relationship between the running variable and the outcome is not well captured by a straight line.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>quadratic <span class="ot">&lt;-</span> <span class="fu">lm</span>(outcome <span class="sc">~</span> forcing <span class="sc">+</span> </span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">I</span>(forcing<span class="sc">^</span><span class="dv">2</span>) <span class="sc">+</span> <span class="co"># I tells R to interpret "as is"</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                  treatment <span class="sc">+</span> </span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">I</span>(forcing <span class="sc">*</span> treatment) <span class="sc">+</span> </span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                  <span class="fu">I</span>((forcing<span class="sc">^</span><span class="dv">2</span>) <span class="sc">*</span> treatment),</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">data =</span> mlda_df)</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(quadratic)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = outcome ~ forcing + I(forcing^2) + treatment + I(forcing * 
+    treatment) + I((forcing^2) * treatment), data = mlda_df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-2.4646 -0.7761 -0.2646  0.8613  3.2418 
+
+Coefficients:
+                           Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)                 29.8090     0.8166  36.505  &lt; 2e-16 ***
+forcing                     -2.9330     1.9138  -1.533 0.132877    
+I(forcing^2)                -0.1852     0.9396  -0.197 0.844661    
+treatment                    4.6629     1.1548   4.038 0.000224 ***
+I(forcing * treatment)      -0.8231     2.7065  -0.304 0.762527    
+I((forcing^2) * treatment)   0.1985     1.3288   0.149 0.881980    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 1.329 on 42 degrees of freedom
+Multiple R-squared:  0.7224,    Adjusted R-squared:  0.6894 
+F-statistic: 21.86 on 5 and 42 DF,  p-value: 1.017e-10</code></pre>
+</div>
+</div>
+<p>Results show that crossing the legal drinking age threshold at 21 years old causes an increase of approximately 4.66 motor vehicle accident deaths per 100,000 people.</p>
+</section>
+<section id="using-rdrobust-package" class="level2">
+<h2 class="anchored" data-anchor-id="using-rdrobust-package">Using <code>rdrobust</code> package</h2>
+<p>This model uses the <code>rdrobust</code> package to estimate the treatment effect using local linear regression (LLR), which is the standard nonparametric approach in RDD. Unlike the global polynomial models (lm), <code>rdrobust</code> focuses only on observations close to the cutoff and applies triangular kernel weights that give more importance to points nearer the threshold. The bandwidth is selected automatically using the mean squared error–optimal (MSE) method, helping balance bias and variance. This method provides more credible and robust inference for RDD by minimizing modeling assumptions and emphasizing local comparisons near the cutoff.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>llr <span class="ot">&lt;-</span> <span class="fu">rdrobust</span>(mlda_df<span class="sc">$</span>outcome, </span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>                  mlda_df<span class="sc">$</span>forcing,  </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>                  <span class="at">c =</span> <span class="dv">0</span>,</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>                  <span class="at">kernel =</span> <span class="st">"tri"</span>,</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>                  <span class="at">bwselect =</span> <span class="st">"mserd"</span>)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(llr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Sharp RD estimates using local polynomial regression.
+
+Number of Obs.                   48
+BW type                       mserd
+Kernel                   Triangular
+VCE method                       NN
+
+Number of Obs.                   24           24
+Eff. Number of Obs.               6            6
+Order est. (p)                    1            1
+Order bias  (q)                   2            2
+BW est. (h)                   0.487        0.487
+BW bias (b)                   0.738        0.738
+rho (h/b)                     0.660        0.660
+Unique Obs.                      24           24
+
+=============================================================================
+        Method     Coef. Std. Err.         z     P&gt;|z|      [ 95% C.I. ]       
+=============================================================================
+  Conventional     4.901     2.059     2.380     0.017     [0.864 , 8.937]     
+        Robust         -         -     1.881     0.060    [-0.198 , 9.674]     
+=============================================================================</code></pre>
+</div>
+</div>
+<p>The treatment effect is reprsented by the <strong>Conventional</strong> row in the output. Crossing the legal drinking age threshold at 21 years old causes an increase of approximately 4.90 motor vehicle accident deaths per 100,000 people.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rdplot</span>(mlda_df<span class="sc">$</span>outcome, </span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                 mlda_df<span class="sc">$</span>forcing,  </span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                 <span class="at">c =</span> <span class="dv">0</span>,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">kernel =</span> <span class="st">"tri"</span>,</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>                 <span class="at">title =</span> <span class="st">"Motor Vehicle Accidents Death"</span>,</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>                 <span class="at">x.label =</span> <span class="st">"Age from 21"</span>,</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>                 <span class="at">y.label =</span>  <span class="st">"Mortality rate from motor vehicle </span><span class="sc">\n</span><span class="st">accidents (per 100,000)"</span></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This plot, created using <code>rdplot()</code> from the <code>rdrobust</code> package, visualizes the relationship between the running variable (age, centered at 21) and the outcome (mortality rate), highlighting the discontinuity at the cutoff. Although no polynomial terms are explicitly included in the model, the plot appears curved because <code>rdplot()</code> fits separate local regressions within each bin, and those bins are smoothed to reflect the underlying trend. The shape is driven by local averages rather than a global functional form, making this a nonparametric visualization that adapts to the data without imposing a strict linear or quadratic structure—hence the smooth curves despite the lack of polynomial terms.</p>
+</section>
+<section id="adding-quadratic-term-in-rdrobust" class="level2">
+<h2 class="anchored" data-anchor-id="adding-quadratic-term-in-rdrobust">Adding Quadratic Term in <code>rdrobust</code></h2>
+<p>This model uses rdrobust to estimate the treatment effect with a local quadratic regression by setting p = 2. Compared to the default local linear model, the quadratic specification allows the relationship between the running variable and the outcome to curve on either side of the cutoff, offering more flexibility in capturing the underlying trend near the threshold.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>quadratic_rdrobust <span class="ot">&lt;-</span> <span class="fu">rdrobust</span>(mlda_df<span class="sc">$</span>outcome, </span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>                               mlda_df<span class="sc">$</span>forcing,  </span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>                               <span class="at">c =</span> <span class="dv">0</span>,</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>                               <span class="at">kernel =</span> <span class="st">"tri"</span>,</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>                               <span class="at">bwselect =</span> <span class="st">"mserd"</span>,</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                               <span class="at">p =</span> <span class="dv">2</span>) <span class="co">#polynomial 2</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(quadratic_rdrobust)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Sharp RD estimates using local polynomial regression.
+
+Number of Obs.                   48
+BW type                       mserd
+Kernel                   Triangular
+VCE method                       NN
+
+Number of Obs.                   24           24
+Eff. Number of Obs.              10           10
+Order est. (p)                    2            2
+Order bias  (q)                   3            3
+BW est. (h)                   0.821        0.821
+BW bias (b)                   1.074        1.074
+rho (h/b)                     0.764        0.764
+Unique Obs.                      24           24
+
+=============================================================================
+        Method     Coef. Std. Err.         z     P&gt;|z|      [ 95% C.I. ]       
+=============================================================================
+  Conventional     4.778     2.337     2.044     0.041     [0.197 , 9.360]     
+        Robust         -         -     1.627     0.104    [-0.911 , 9.811]     
+=============================================================================</code></pre>
+</div>
+</div>
+<p>Crossing the legal drinking age threshold at 21 years old causes an increase of approximately 4.78 motor vehicle accident deaths per 100,000 people.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rdplot</span>(mlda_df<span class="sc">$</span>outcome, </span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>       mlda_df<span class="sc">$</span>forcing,  </span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>       <span class="at">c =</span> <span class="dv">0</span>,</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">kernel =</span> <span class="st">"tri"</span>,</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">p =</span> <span class="dv">2</span>,</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>       <span class="at">title =</span> <span class="st">"Motor Vehicle Accidents Death"</span>,</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>       <span class="at">x.label =</span> <span class="st">"Age from 21"</span>,</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">y.label =</span>  <span class="st">"Mortality rate from motor vehicle </span><span class="sc">\n</span><span class="st">accidents (per 100,000)"</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This plot uses <code>rdplot()</code> with a local quadratic fit (p = 2) to visualize the relationship between age and motor vehicle accident mortality rates around the legal drinking age cutoff. Unlike the default local linear version, this plot allows for curvature within each side of the threshold, potentially capturing more subtle patterns in the data.</p>
+<p>Although local linear models are often preferred for their simplicity, in this case the local quadratic model appears to better capture the data trend, suggesting some curvature in the outcome near the cutoff.</p>
+</section>
+</section>
+<section id="fuzzy-rdd" class="level1">
+<h1>Fuzzy RDD</h1>
+<section id="introducing-data" class="level2">
+<h2 class="anchored" data-anchor-id="introducing-data">Introducing Data</h2>
+<p>In this dataset, students are offered access to a tutoring program based on their entrance exam score. Students who score below 70 are eligible for tutoring. The running variable is the exam score, the cutoff is 70, and the treatment is actual participation in tutoring.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>tutoring <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"https://evalsp21.classes.andrewheiss.com/data/tutoring_program_fuzzy.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 1000 Columns: 5
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr (1): tutoring_text
+dbl (3): id, entrance_exam, exit_exam
+lgl (1): tutoring
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tutoring)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 5
+     id entrance_exam tutoring tutoring_text exit_exam
+  &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;    &lt;chr&gt;             &lt;dbl&gt;
+1     1          92.4 FALSE    No tutor           78.1
+2     2          72.8 FALSE    No tutor           58.2
+3     3          53.7 TRUE     Tutor              62.0
+4     4          98.3 FALSE    No tutor           67.5
+5     5          69.7 TRUE     Tutor              54.1
+6     6          68.1 TRUE     Tutor              60.1</code></pre>
+</div>
+</div>
+</section>
+<section id="checking-for-fuzzy-rdd" class="level2">
+<h2 class="anchored" data-anchor-id="checking-for-fuzzy-rdd">Checking for Fuzzy RDD</h2>
+<p>As we did in the Sharp RDD section, we begin by visualizing the data to determine whether the design is sharp or fuzzy. The graph reveals that some ineligible students (those who scored above 70) still participated in the tutoring program, while some eligible students (below 70) did not enroll. This imperfect compliance indicates that the treatment assignment is not perfectly determined by the cutoff, confirming that this is a fuzzy RDD rather than a sharp one.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(tutoring, <span class="fu">aes</span>(<span class="at">x =</span> entrance_exam, <span class="at">y =</span> tutoring_text, <span class="at">color =</span> entrance_exam <span class="sc">&lt;=</span> <span class="dv">70</span>)) <span class="sc">+</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Make points small and semi-transparent since there are lots of them</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.5</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>,</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">position =</span> <span class="fu">position_jitter</span>(<span class="at">width =</span> <span class="dv">0</span>, <span class="at">height =</span> <span class="fl">0.25</span>, <span class="at">seed =</span> <span class="dv">1234</span>)) <span class="sc">+</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add vertical line</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">70</span>) <span class="sc">+</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add labels</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Entrance exam score"</span>, <span class="at">y =</span> <span class="st">"Participated in tutoring program"</span>) <span class="sc">+</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Turn off the color legend, since it's redundant</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">color =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: The `&lt;scale&gt;` argument of `guides()` cannot be `FALSE`. Use "none" instead as
+of ggplot2 3.3.4.</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>We can also examine the distribution of students above and below the cutoff within each treatment group using this summary table. The table shows how many students received tutoring or not, and whether they scored above or below the threshold. Here we have 36 people who should have used tutoring who didn’t, and we have 116 people who somehow snuck into the program.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>tutoring <span class="sc">%&gt;%</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(tutoring, entrance_exam <span class="sc">&lt;=</span> <span class="dv">70</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">count =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(tutoring) <span class="sc">%&gt;%</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prop =</span> count <span class="sc">/</span> <span class="fu">sum</span>(count))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'tutoring'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 4
+# Groups:   tutoring [2]
+  tutoring `entrance_exam &lt;= 70` count   prop
+  &lt;lgl&gt;    &lt;lgl&gt;                 &lt;int&gt;  &lt;dbl&gt;
+1 FALSE    FALSE                   646 0.947 
+2 FALSE    TRUE                     36 0.0528
+3 TRUE     FALSE                   116 0.365 
+4 TRUE     TRUE                    202 0.635 </code></pre>
+</div>
+</div>
+<p>This plot shows the proportion of students who participated in the tutoring program across different entrance exam score bins. Instead of a binary treatment jump, we observe a gradual shift in the probability of receiving treatment around the cutoff score of 70. While there is a noticeable increase in tutoring participation below the cutoff, the change is not from 0 to 1, but rather a discrete jump in probability. This further supports the fuzzy RDD framework, where treatment assignment is not deterministic but exhibits a discontinuity in likelihood at the threshold.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>tutoring_with_bins <span class="ot">&lt;-</span> tutoring <span class="sc">%&gt;%</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">exam_binned =</span> <span class="fu">cut</span>(entrance_exam, <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>, <span class="dv">100</span>, <span class="dv">5</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Group by each of the new bins and tutoring status</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(exam_binned, tutoring) <span class="sc">%&gt;%</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Count how many people are in each test bin + used/didn't use tutoring</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">n =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Make this summarized data wider so that there's a column for tutoring and no tutoring</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="st">"tutoring"</span>, <span class="at">values_from =</span> <span class="st">"n"</span>, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">tutor_yes =</span> <span class="st">`</span><span class="at">TRUE</span><span class="st">`</span>, <span class="at">tutor_no =</span> <span class="st">`</span><span class="at">FALSE</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Find the probability of tutoring in each bin by taking</span></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>  <span class="co"># the count of yes / count of yes + count of no</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">prob_tutoring =</span> tutor_yes <span class="sc">/</span> (tutor_yes <span class="sc">+</span> tutor_no))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'exam_binned'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot this puppy</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(tutoring_with_bins, <span class="fu">aes</span>(<span class="at">x =</span> exam_binned, <span class="at">y =</span> prob_tutoring)) <span class="sc">+</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fl">8.5</span>) <span class="sc">+</span></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Entrance exam score"</span>, <span class="at">y =</span> <span class="st">"Proportion of people participating in program"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-15-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>While we might expect a visible jump in exit scores at the threshold if tutoring had a strong effect, the treatment effect is not immediately obvious here. The trend lines show some difference in slopes, but no clear discontinuity, making the gap harder to detect visually. This highlights why we need formal estimation methods—like fuzzy RDD with 2SLS—to isolate the causal effect of tutoring, especially when treatment is not perfectly assigned and outcomes are noisy.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(tutoring, <span class="fu">aes</span>(<span class="at">x =</span> entrance_exam, <span class="at">y =</span> exit_exam, <span class="at">color =</span> tutoring)) <span class="sc">+</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add a line based on a linear model for the people scoring less than 70</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">data =</span> <span class="fu">filter</span>(tutoring, entrance_exam <span class="sc">&lt;=</span> <span class="dv">70</span>), <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add a line based on a linear model for the people scoring 70 or more</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">data =</span> <span class="fu">filter</span>(tutoring, entrance_exam <span class="sc">&gt;</span> <span class="dv">70</span>), <span class="at">method =</span> <span class="st">"lm"</span>) <span class="sc">+</span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">70</span>) <span class="sc">+</span></span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">"Entrance exam score"</span>, <span class="at">y =</span> <span class="st">"Exit exam score"</span>, <span class="at">color =</span> <span class="st">"Used tutoring"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'
+`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-16-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="instrumental-variable" class="level2">
+<h2 class="anchored" data-anchor-id="instrumental-variable">Instrumental Variable</h2>
+<p>Let’s create the variables needed to implement a fuzzy regression discontinuity design using instrumental variables (IV). Just like in the sharp RDD, we begin by centering the running variable (<em>entrance_exam</em>) at the cutoff (70) so that the cutoff point becomes zero. This makes the interpretation of our regression coefficients much clearer.</p>
+<p>In addition to centering, we create a new variable called <em>below_cutoff</em>, which serves as our instrument—it equals TRUE if a student scored below 70 and was thus eligible for tutoring, and FALSE otherwise. This variable doesn’t directly determine whether the student actually received tutoring (treatment), but it does affect the likelihood of receiving it, satisfying the relevance requirement for IV. We’ll use this instrument in a two-stage least squares (2SLS) model to estimate the local average treatment effect of tutoring on exit exam scores.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>tutoring_centered <span class="ot">&lt;-</span> tutoring <span class="sc">%&gt;%</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">entrance_centered =</span> entrance_exam <span class="sc">-</span> <span class="dv">70</span>,</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>         <span class="at">below_cutoff =</span> entrance_exam <span class="sc">&lt;=</span> <span class="dv">70</span>)</span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(tutoring_centered)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 7
+     id entrance_exam tutoring tutoring_text exit_exam entrance_centered
+  &lt;dbl&gt;         &lt;dbl&gt; &lt;lgl&gt;    &lt;chr&gt;             &lt;dbl&gt;             &lt;dbl&gt;
+1     1          92.4 FALSE    No tutor           78.1            22.4  
+2     2          72.8 FALSE    No tutor           58.2             2.77 
+3     3          53.7 TRUE     Tutor              62.0           -16.3  
+4     4          98.3 FALSE    No tutor           67.5            28.3  
+5     5          69.7 TRUE     Tutor              54.1            -0.288
+6     6          68.1 TRUE     Tutor              60.1            -1.93 
+# ℹ 1 more variable: below_cutoff &lt;lgl&gt;</code></pre>
+</div>
+</div>
+<p>The outcome is the exit exam score, and the treatment of interest is tutoring. Because tutoring was not perfectly assigned based on the entrance exam cutoff, we instrument for tutoring using the below_cutoff variable—whether a student scored below the threshold of 70.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>model_fuzzy <span class="ot">&lt;-</span> <span class="fu">iv_robust</span>(</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  exit_exam <span class="sc">~</span> entrance_centered <span class="sc">+</span> tutoring <span class="sc">|</span> entrance_centered <span class="sc">+</span> below_cutoff,</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">filter</span>(tutoring_centered, entrance_centered <span class="sc">&gt;=</span> <span class="sc">-</span><span class="dv">10</span> <span class="sc">&amp;</span> entrance_centered <span class="sc">&lt;=</span> <span class="dv">10</span>)</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tidy</span>(model_fuzzy)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>               term   estimate  std.error statistic       p.value   conf.low
+1       (Intercept) 60.1413558 1.01765573 59.097939 9.746624e-200 58.1407338
+2 entrance_centered  0.4366281 0.09929619  4.397229  1.407213e-05  0.2414205
+3      tutoringTRUE  9.7410444 1.91184891  5.095091  5.384163e-07  5.9825170
+   conf.high  df   outcome
+1 62.1419778 400 exit_exam
+2  0.6318357 400 exit_exam
+3 13.4995718 400 exit_exam</code></pre>
+</div>
+</div>
+<p>The tutoring program causes an average increase of 9.74 points on the final exam for compliers in the bandwidth.</p>
+</section>
+<section id="using-rdrobust" class="level2">
+<h2 class="anchored" data-anchor-id="using-rdrobust">Using <code>rdrobust</code></h2>
+<p>This code estimates the causal effect of tutoring on exit exam scores using a fuzzy regression discontinuity design with the <code>rdrobust()</code> package. Because tutoring was not perfectly assigned at the cutoff score of 70, we specify <code>fuzzy = tutoring$tutoring</code> to indicate that treatment status was only partially determined by crossing the threshold. The function uses local polynomial regression and automatically selects an optimal bandwidth to focus on observations near the cutoff. By treating the cutoff-based eligibility as an instrument for actual tutoring participation, this model provides a robust estimate of the local average treatment effect (LATE) for students whose tutoring decision was influenced by whether they scored just below or above the threshold.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rdrobust</span>(<span class="at">y =</span> tutoring<span class="sc">$</span>exit_exam, <span class="at">x =</span> tutoring<span class="sc">$</span>entrance_exam,</span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>         <span class="at">c =</span> <span class="dv">70</span>, <span class="at">fuzzy =</span> tutoring<span class="sc">$</span>tutoring) <span class="sc">%&gt;%</span></span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summary</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fuzzy RD estimates using local polynomial regression.
+
+Number of Obs.                 1000
+BW type                       mserd
+Kernel                   Triangular
+VCE method                       NN
+
+Number of Obs.                  238          762
+Eff. Number of Obs.             170          347
+Order est. (p)                    1            1
+Order bias  (q)                   2            2
+BW est. (h)                  12.985       12.985
+BW bias (b)                  19.733       19.733
+rho (h/b)                     0.658        0.658
+Unique Obs.                     238          762
+
+First-stage estimates.
+
+=============================================================================
+        Method     Coef. Std. Err.         z     P&gt;|z|      [ 95% C.I. ]       
+=============================================================================
+  Conventional    -0.708     0.073    -9.751     0.000    [-0.850 , -0.565]    
+        Robust         -         -    -8.424     0.000    [-0.907 , -0.565]    
+=============================================================================
+
+Treatment effect estimates.
+
+=============================================================================
+        Method     Coef. Std. Err.         z     P&gt;|z|      [ 95% C.I. ]       
+=============================================================================
+  Conventional     9.683     1.893     5.116     0.000     [5.973 , 13.393]    
+        Robust         -         -     4.258     0.000     [5.210 , 14.095]    
+=============================================================================</code></pre>
+</div>
+</div>
+<p>We look into the Treatment effect estimates table: with a triangular kernel and a bandwidth of ±12.96, the causal effect of the tutoring program for compliers in the bandwidth is 9.683.</p>
+</section>
+</section>
+<section id="diagnostic" class="level1">
+<h1>Diagnostic</h1>
+<section id="density-test-mccrary-test" class="level2">
+<h2 class="anchored" data-anchor-id="density-test-mccrary-test">Density Test (McCrary Test)</h2>
+<p>McCrary density test uses the <code>rddensity</code> package to check for potential manipulation of the running variable—in this case, age—at the cutoff point of 21, which is the legal drinking age. In regression discontinuity designs, one of the key assumptions is that individuals cannot precisely manipulate their value of the running variable to sort just above or below the threshold. If such manipulation exists, it could undermine the validity of the design by introducing selection bias.</p>
+<p>The <code>rddensity()</code> function estimates the density of observations on either side of the cutoff and tests whether there is a discontinuity in the number of observations at the threshold. If individuals could somehow influence their age in the dataset to appear just under or just over 21 (e.g., through data reporting errors or sample construction), we would expect to see a significant jump or drop in the density.</p>
+<p>The output from <code>summary(rdd_result)</code> includes a test statistic and a p-value. If the p-value is large (e.g., &gt; 0.05), it suggests that there is <strong>no significant discontinuity</strong> in the density, meaning the distribution of age around 21 appears smooth and continuous. This supports the validity of the RDD, as it suggests there is no evidence of manipulation near the cutoff. The <code>rdplotdensity()</code> function provides a visual representation of this test, allowing you to confirm that the number of observations is balanced across the cutoff and there is no visible jump in the density plot.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rddensity)</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Run McCrary density test</span></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>rdd_result <span class="ot">&lt;-</span> <span class="fu">rddensity</span>(<span class="at">X =</span> mlda_df<span class="sc">$</span>agecell, <span class="at">c =</span> <span class="dv">21</span>)</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Show summary and plot</span></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(rdd_result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Manipulation testing using local polynomial density estimation.
+
+Number of obs =       48
+Model =               unrestricted
+Kernel =              triangular
+BW method =           estimated
+VCE method =          jackknife
+
+c = 21                Left of c           Right of c          
+Number of obs         24                  24                  
+Eff. Number of obs    24                  24                  
+Order est. (p)        2                   2                   
+Order bias (q)        3                   3                   
+BW est. (h)           1.932               1.932               
+
+Method                T                   P &gt; |T|             
+Robust                0                   1                   
+
+
+P-values of binomial tests (H0: p=0.5).
+
+Window Length / 2          &lt;c     &gt;=c    P&gt;|T|
+1.603                      20      20    1.0000
+1.639                      20      20    1.0000
+1.676                      20      20    1.0000
+1.712                      21      21    1.0000
+1.749                      21      21    1.0000
+1.785                      22      22    1.0000
+1.822                      22      22    1.0000
+1.858                      23      23    1.0000
+1.895                      23      23    1.0000
+1.932                      24      24    1.0000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rdplotdensity</span>(rdd_result, <span class="at">X =</span> mlda_df<span class="sc">$</span>agecell)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$Estl
+Call: lpdensity
+
+Sample size                                      24
+Polynomial order for point estimation    (p=)    2
+Order of derivative estimated            (v=)    1
+Polynomial order for confidence interval (q=)    3
+Kernel function                                  triangular
+Scaling factor                                   0.51063829787234
+Bandwidth method                                 user provided
+
+Use summary(...) to show estimates.
+
+$Estr
+Call: lpdensity
+
+Sample size                                      24
+Polynomial order for point estimation    (p=)    2
+Order of derivative estimated            (v=)    1
+Polynomial order for confidence interval (q=)    3
+Kernel function                                  triangular
+Scaling factor                                   0.51063829787234
+Bandwidth method                                 user provided
+
+Use summary(...) to show estimates.
+
+$Estplot</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Tutorial10_files/figure-html/unnamed-chunk-20-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="covariate-balance-check" class="level2">
+<h2 class="anchored" data-anchor-id="covariate-balance-check">Covariate Balance Check</h2>
+<p>The goal of this test is to verify whether covariates, such as drug use rates, are balanced just above and below the cutoff—i.e., whether there’s any discontinuity in a pretreatment covariate at the threshold. Since drug use isn’t directly affected by legal alcohol access (assuming it’s a background characteristic), we would expect <strong>no significant jump</strong> at the cutoff if the RDD is valid.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">rdrobust</span>(<span class="at">y =</span> mlda_df<span class="sc">$</span>drugs, <span class="at">x =</span> mlda_df<span class="sc">$</span>agecell, <span class="at">c =</span> <span class="dv">21</span>, <span class="at">p =</span> <span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Sharp RD estimates using local polynomial regression.
+
+Number of Obs.                   48
+BW type                       mserd
+Kernel                   Triangular
+VCE method                       NN
+
+Number of Obs.                   24           24
+Eff. Number of Obs.              11           11
+Order est. (p)                    2            2
+Order bias  (q)                   3            3
+BW est. (h)                   0.889        0.889
+BW bias (b)                   1.249        1.249
+rho (h/b)                     0.712        0.712
+Unique Obs.                      24           24
+
+=============================================================================
+        Method     Coef. Std. Err.         z     P&gt;|z|      [ 95% C.I. ]       
+=============================================================================
+  Conventional    -0.179     0.440    -0.406     0.685    [-1.041 , 0.684]     
+        Robust         -         -    -0.389     0.697    [-1.207 , 0.807]     
+=============================================================================</code></pre>
+</div>
+</div>
+</section>
+<section id="placebo-cutoff" class="level2">
+<h2 class="anchored" data-anchor-id="placebo-cutoff">Placebo Cutoff</h2>
+<p>Placebo test shifts the cutoff from the true threshold to an artificial one, for example, at age 20. The purpose of this test is to check whether a discontinuity in the outcome (e.g., mortality from motor vehicle accidents) appears at a point where no treatment actually occurs. If the regression shows a statistically significant jump at age 20, it may indicate that the RDD assumptions are violated or that the outcome trend contains natural breaks unrelated to treatment. However, if the result is <strong>not statistically significant</strong>, it strengthens confidence that the observed treatment effect at age 21 is truly caused by the change in legal drinking access, and not due to random or underlying trends in the data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">rdrobust</span>(mlda_df<span class="sc">$</span>outcome, mlda_df<span class="sc">$</span>agecell,</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>          <span class="at">c =</span> <span class="dv">20</span>, <span class="at">p =</span> <span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Sharp RD estimates using local polynomial regression.
+
+Number of Obs.                   48
+BW type                       mserd
+Kernel                   Triangular
+VCE method                       NN
+
+Number of Obs.                   12           36
+Eff. Number of Obs.               7            6
+Order est. (p)                    2            2
+Order bias  (q)                   3            3
+BW est. (h)                   0.535        0.535
+BW bias (b)                   0.778        0.778
+rho (h/b)                     0.688        0.688
+Unique Obs.                      12           36
+
+=============================================================================
+        Method     Coef. Std. Err.         z     P&gt;|z|      [ 95% C.I. ]       
+=============================================================================
+  Conventional    -3.561     2.654    -1.342     0.180    [-8.763 , 1.642]     
+        Robust         -         -    -1.636     0.102   [-10.937 , 0.985]     
+=============================================================================</code></pre>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

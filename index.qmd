@@ -25,3 +25,5 @@ This tutorial website contains the R code and output of weekly tutorials.
 [Week 8 Matching](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial8.html)
 
 [Week 9 Synthetic Control](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial9.html)
+
+[Week 10 Regression Discontinuity Design](https://rosemarypang.com/Causal_Inference_Spring25/Tutorial10.html)
